@@ -9,18 +9,18 @@ import mage.client.components.ext.dlg.DialogManager;
 import mage.client.components.ext.dlg.DlgParams;
 import mage.client.components.ext.dlg.IDialogPanel;
 import mage.client.plugins.impl.Plugins;
-import mage.client.util.audio.AudioManager;
 import mage.client.util.Command;
 import mage.client.util.SettingsManager;
+import mage.client.util.audio.AudioManager;
 import mage.view.CardView;
 import mage.view.CardsView;
+import org.mage.card.arcane.CardPanel;
 import org.mage.plugins.card.utils.impl.ImageManagerImpl;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.UUID;
-import org.mage.card.arcane.CardPanel;
 
 /**
  * @author mw, noxx
@@ -130,7 +130,7 @@ public class ChoiceDialog extends IDialogPanel {
             return;
         }
 
-        java.util.List<Component> toRemove = new ArrayList<Component>();
+        java.util.List<Component> toRemove = new ArrayList<>();
         for (int i = getComponentCount() - 1; i > 0; i--) {
             Component o = getComponent(i);
             if (o instanceof MageCard) {
@@ -141,8 +141,7 @@ public class ChoiceDialog extends IDialogPanel {
             remove(toRemove.get(i));
         }
 
-        java.util.List<CardView> cardList = new ArrayList<CardView>();
-        cardList.addAll(cards.values());
+        java.util.List<CardView> cardList = new ArrayList<>(cards.values());
 
         int width = SettingsManager.getInstance().getCardSize().width;
         int height = SettingsManager.getInstance().getCardSize().height;
@@ -162,7 +161,7 @@ public class ChoiceDialog extends IDialogPanel {
             }
 
             CardView card = cardList.get(i);
-            MageCard cardImg = Plugins.getInstance().getMageCard(card, bigCard, getCardDimension(), gameId, true);
+            MageCard cardImg = Plugins.getInstance().getMageCard(card, bigCard, getCardDimension(), gameId, true, true);
 
             cardImg.setLocation(dx, dy + j*(height + 30));
             add(cardImg);
@@ -184,11 +183,7 @@ public class ChoiceDialog extends IDialogPanel {
             jButtonOK.setBounds(new Rectangle(w / 2 - 40, h - 50, 60, 60));
             jButtonOK.setToolTipText("Ok");
 
-            jButtonOK.setObserver(new Command() {
-                public void execute() {
-                    DialogManager.getManager(gameId).fadeOut((DialogContainer) getParent());
-                }
-            });
+            jButtonOK.setObserver(() -> DialogManager.getManager(gameId).fadeOut((DialogContainer) getParent()));
         }
         return jButtonOK;
     }
@@ -204,27 +199,24 @@ public class ChoiceDialog extends IDialogPanel {
             jButtonPrevPage.setBounds(new Rectangle(w / 2 - 125, h - 50, 60, 60));
             jButtonPrevPage.setVisible(false);
 
-            jButtonPrevPage.setObserver(new Command() {
-
-                public void execute() {
-                    if (page == 1) {
-                        return;
-                    }
-
-                    AudioManager.playPrevPage();
-
-                    page--;
-                    getJButtonPrevPage().setVisible(false);
-                    getJButtonOK().setVisible(false);
-                    getJButtonNextPage().setVisible(false);
-                    revalidate();
-                    displayCards(params.getCards(), params.gameId, params.bigCard);
-                    if (page != 1) {
-                        getJButtonPrevPage().setVisible(true);
-                    }
-                    getJButtonOK().setVisible(true);
-                    getJButtonNextPage().setVisible(true);
+            jButtonPrevPage.setObserver(() -> {
+                if (page == 1) {
+                    return;
                 }
+
+                AudioManager.playPrevPage();
+
+                page--;
+                getJButtonPrevPage().setVisible(false);
+                getJButtonOK().setVisible(false);
+                getJButtonNextPage().setVisible(false);
+                revalidate();
+                displayCards(params.getCards(), params.gameId, params.bigCard);
+                if (page != 1) {
+                    getJButtonPrevPage().setVisible(true);
+                }
+                getJButtonOK().setVisible(true);
+                getJButtonNextPage().setVisible(true);
             });
         }
         return jButtonPrevPage;

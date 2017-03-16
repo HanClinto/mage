@@ -27,6 +27,13 @@
  */
 package mage.remote;
 
+import java.io.IOException;
+import java.lang.reflect.UndeclaredThrowableException;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import javax.swing.JOptionPane;
+
 import mage.MageException;
 import mage.cards.decks.DeckCardLists;
 import mage.cards.decks.InvalidDeckException;
@@ -34,7 +41,6 @@ import mage.cards.repository.CardInfo;
 import mage.cards.repository.CardRepository;
 import mage.cards.repository.ExpansionInfo;
 import mage.cards.repository.ExpansionRepository;
-import mage.constants.Constants.SessionState;
 import mage.constants.ManaType;
 import mage.constants.PlayerAction;
 import mage.game.GameException;
@@ -56,17 +62,14 @@ import org.jboss.remoting.transport.bisocket.Bisocket;
 import org.jboss.remoting.transport.socket.SocketWrapper;
 import org.jboss.remoting.transporter.TransporterClient;
 
-import java.io.IOException;
-import java.lang.reflect.UndeclaredThrowableException;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class SessionImpl implements Session {
+
+    private enum SessionState {
+        DISCONNECTED, CONNECTED, CONNECTING, DISCONNECTING, SERVER_STARTING
+    }
 
     private static final Logger logger = Logger.getLogger(SessionImpl.class);
 
@@ -103,6 +106,7 @@ public class SessionImpl implements Session {
     // intended to be used with handleRemotingTaskExceptions for sharing the common exception
     // handling.
     public interface RemotingTask {
+
         public boolean run() throws Throwable;
     }
 
@@ -127,8 +131,8 @@ public class SessionImpl implements Session {
             } else if (cause instanceof NoSuchMethodException) {
                 // NoSuchMethodException is thrown on an invocation of an unknow JBoss remoting
                 // method, so it's likely to be because of a version incompatibility.
-                addMessage = "The following method is not available in the server, probably the " +
-                        "server version is not compatible to the client: " + cause.getMessage();
+                addMessage = "The following method is not available in the server, probably the "
+                        + "server version is not compatible to the client: " + cause.getMessage();
             }
             if (addMessage.isEmpty()) {
                 logger.fatal("", ex);
@@ -157,7 +161,7 @@ public class SessionImpl implements Session {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Unable to connect to server.\n");
                 for (StackTraceElement element : t.getStackTrace()) {
-                    sb.append(element.toString()).append("\n");
+                    sb.append(element.toString()).append('\n');
                 }
                 client.showMessage(sb.toString());
             }
@@ -170,11 +174,11 @@ public class SessionImpl implements Session {
         return establishJBossRemotingConnection(connection) && handleRemotingTaskExceptions(new RemotingTask() {
             @Override
             public boolean run() throws Throwable {
-                logger.info("Trying to register as " + getUserName() + " to XMAGE server at " + connection.getHost() + ":" + connection.getPort());
+                logger.info("Trying to register as " + getUserName() + " to XMAGE server at " + connection.getHost() + ':' + connection.getPort());
                 boolean registerResult = server.registerUser(sessionId, connection.getUsername(),
                         connection.getPassword(), connection.getEmail());
                 if (registerResult) {
-                    logger.info("Registered as " + getUserName() + " to MAGE server at " + connection.getHost() + ":" + connection.getPort());
+                    logger.info("Registered as " + getUserName() + " to MAGE server at " + connection.getHost() + ':' + connection.getPort());
                 }
                 return registerResult;
             }
@@ -186,10 +190,10 @@ public class SessionImpl implements Session {
         return establishJBossRemotingConnection(connection) && handleRemotingTaskExceptions(new RemotingTask() {
             @Override
             public boolean run() throws Throwable {
-                logger.info("Trying to ask for an auth token to " + getEmail() + " to XMAGE server at " + connection.getHost() + ":" + connection.getPort());
+                logger.info("Trying to ask for an auth token to " + getEmail() + " to XMAGE server at " + connection.getHost() + ':' + connection.getPort());
                 boolean result = server.emailAuthToken(sessionId, connection.getEmail());
                 if (result) {
-                    logger.info("An auth token is emailed to " + getEmail() + " from MAGE server at " + connection.getHost() + ":" + connection.getPort());
+                    logger.info("An auth token is emailed to " + getEmail() + " from MAGE server at " + connection.getHost() + ':' + connection.getPort());
                 }
                 return result;
             }
@@ -201,10 +205,10 @@ public class SessionImpl implements Session {
         return establishJBossRemotingConnection(connection) && handleRemotingTaskExceptions(new RemotingTask() {
             @Override
             public boolean run() throws Throwable {
-                logger.info("Trying reset the password in XMAGE server at " + connection.getHost() + ":" + connection.getPort());
+                logger.info("Trying reset the password in XMAGE server at " + connection.getHost() + ':' + connection.getPort());
                 boolean result = server.resetPassword(sessionId, connection.getEmail(), connection.getAuthToken(), connection.getPassword());
                 if (result) {
-                    logger.info("Password is successfully reset in MAGE server at " + connection.getHost() + ":" + connection.getPort());
+                    logger.info("Password is successfully reset in MAGE server at " + connection.getHost() + ':' + connection.getPort());
                 }
                 return result;
             }
@@ -213,16 +217,17 @@ public class SessionImpl implements Session {
 
     @Override
     public synchronized boolean connect(final Connection connection) {
-        return establishJBossRemotingConnection(connection) && handleRemotingTaskExceptions(new RemotingTask() {
+        return establishJBossRemotingConnection(connection)
+                && handleRemotingTaskExceptions(new RemotingTask() {
             @Override
             public boolean run() throws Throwable {
-                logger.info("Trying to log-in as " + getUserName() + " to XMAGE server at " + connection.getHost() + ":" + connection.getPort());
+                logger.info("Trying to log-in as " + getUserName() + " to XMAGE server at " + connection.getHost() + ':' + connection.getPort());
                 boolean registerResult;
                 if (connection.getAdminPassword() == null) {
                     // for backward compatibility. don't remove twice call - first one does nothing but for version checking
-                    registerResult = server.connectUser(connection.getUsername(), connection.getPassword(), sessionId, client.getVersion());
+                    registerResult = server.connectUser(connection.getUsername(), connection.getPassword(), sessionId, client.getVersion(), connection.getUserIdStr());
                     if (registerResult) {
-                        server.setUserData(connection.getUsername(), sessionId, connection.getUserData());
+                        server.setUserData(connection.getUsername(), sessionId, connection.getUserData(), client.getVersion().toString(), connection.getUserIdStr());
                     }
                 } else {
                     registerResult = server.connectAdmin(connection.getAdminPassword(), sessionId, client.getVersion());
@@ -232,14 +237,18 @@ public class SessionImpl implements Session {
                     if (!connection.getUsername().equals("Admin")) {
                         updateDatabase(connection.isForceDBComparison(), serverState);
                     }
-                    logger.info("Logged-in as " + getUserName() + " to MAGE server at " + connection.getHost() + ":" + connection.getPort());
-                    client.connected(getUserName() + "@" + connection.getHost() + ":" + connection.getPort() + " ");
+                    logger.info("Logged-in as " + getUserName() + " to MAGE server at " + connection.getHost() + ':' + connection.getPort());
+                    client.connected(getUserName() + '@' + connection.getHost() + ':' + connection.getPort() + ' ');
                     return true;
                 }
                 disconnect(false);
                 return false;
             }
         });
+    }
+
+    public Optional<String> getServerHostname() {
+        return isConnected() ? Optional.of(connection.getHost()) : Optional.<String>empty();
     }
 
     @Override
@@ -258,7 +267,7 @@ public class SessionImpl implements Session {
         boolean result = handleRemotingTaskExceptions(new RemotingTask() {
             @Override
             public boolean run() throws Throwable {
-                logger.info("Trying to connect to XMAGE server at " + connection.getHost() + ":" + connection.getPort());
+                logger.info("Trying to connect to XMAGE server at " + connection.getHost() + ':' + connection.getPort());
 
                 System.setProperty("http.nonProxyHosts", "code.google.com");
                 System.setProperty("socksNonProxyHosts", "code.google.com");
@@ -341,24 +350,25 @@ public class SessionImpl implements Session {
 
                 /**
                  * I'll explain the meaning of "secondaryBindPort" and
-                 * "secondaryConnectPort", and maybe that will help. The Remoting
-                 * bisocket transport creates two ServerSockets on the server. The
-                 * "primary" ServerSocket is used to create connections used for
-                 * ordinary invocations, e.g., a request to create a JMS consumer,
-                 * and the "secondary" ServerSocket is used to create "control"
-                 * connections for internal Remoting messages. The port for the
-                 * primary ServerSocket is configured by the "serverBindPort"
-                 * parameter, and the port for the secondary ServerSocket is, by
-                 * default, chosen randomly. The "secondaryBindPort" parameter can
-                 * be used to assign a specific port to the secondary ServerSocket.
-                 * Now, if there is a translating firewall between the client and
-                 * server, the client should be given the value of the port that is
+                 * "secondaryConnectPort", and maybe that will help. The
+                 * Remoting bisocket transport creates two ServerSockets on the
+                 * server. The "primary" ServerSocket is used to create
+                 * connections used for ordinary invocations, e.g., a request to
+                 * create a JMS consumer, and the "secondary" ServerSocket is
+                 * used to create "control" connections for internal Remoting
+                 * messages. The port for the primary ServerSocket is configured
+                 * by the "serverBindPort" parameter, and the port for the
+                 * secondary ServerSocket is, by default, chosen randomly. The
+                 * "secondaryBindPort" parameter can be used to assign a
+                 * specific port to the secondary ServerSocket. Now, if there is
+                 * a translating firewall between the client and server, the
+                 * client should be given the value of the port that is
                  * translated to the actual binding port of the secondary
                  * ServerSocket. For example, your configuration will tell the
-                 * secondary ServerSocket to bind to port 14000, and it will tell
-                 * the client to connect to port 14001. It assumes that there is a
-                 * firewall which will translate 14001 to 14000. Apparently, that's
-                 * not happening.
+                 * secondary ServerSocket to bind to port 14000, and it will
+                 * tell the client to connect to port 14001. It assumes that
+                 * there is a firewall which will translate 14001 to 14000.
+                 * Apparently, that's not happening.
                  */
                 // secondaryBindPort - the port to which the secondary server socket is to be bound. By default, an arbitrary port is selected.
                 // secondaryConnectPort - the port clients are to use to connect to the secondary server socket.
@@ -388,14 +398,14 @@ public class SessionImpl implements Session {
 
                 Set callbackConnectors = callbackClient.getCallbackConnectors(callbackHandler);
                 if (callbackConnectors.size() != 1) {
-                    logger.warn("There should be one callback Connector (number existing = " + callbackConnectors.size() + ")");
+                    logger.warn("There should be one callback Connector (number existing = " + callbackConnectors.size() + ')');
                 }
 
                 callbackClient.invoke(null);
 
                 sessionId = callbackClient.getSessionId();
                 sessionState = SessionState.CONNECTED;
-                logger.info("Connected to MAGE server at " + connection.getHost() + ":" + connection.getPort());
+                logger.info("Connected to MAGE server at " + connection.getHost() + ':' + connection.getPort());
                 return true;
             }
         });
@@ -448,7 +458,7 @@ public class SessionImpl implements Session {
                 break;
             }
             if (t.getCause() != null && logger.isDebugEnabled()) {
-                message = "\n" + t.getCause().getMessage() + message;
+                message = '\n' + t.getCause().getMessage() + message;
                 logger.debug(t.getCause().getMessage());
             }
 
@@ -461,9 +471,8 @@ public class SessionImpl implements Session {
     }
 
     /**
-     *
      * @param askForReconnect - true = connection was lost because of error and
-     * ask the user if he want to try to reconnect
+     *                        ask the user if he want to try to reconnect
      */
     @Override
     public synchronized void disconnect(boolean askForReconnect) {
@@ -487,7 +496,7 @@ public class SessionImpl implements Session {
             sessionState = SessionState.DISCONNECTED;
             logger.info("Disconnected ... ");
             if (askForReconnect) {
-                client.showError("Network error.  You have been disconnected");
+                client.showError("Network error.  You have been disconnected from " + connection.getHost());
             }
             client.disconnected(askForReconnect); // MageFrame with check to reconnect
             pingTime.clear();
@@ -674,6 +683,11 @@ public class SessionImpl implements Session {
     public boolean joinTable(UUID roomId, UUID tableId, String playerName, String playerType, int skill, DeckCardLists deckList, String password) {
         try {
             if (isConnected()) {
+                // Workaround to fix Can't join table problem
+                if (deckList != null) {
+                    deckList.setCardLayout(null);
+                    deckList.setSideboardLayout(null);
+                }
                 return server.joinTable(sessionId, roomId, tableId, playerName, playerType, skill, deckList, password);
             }
         } catch (InvalidDeckException iex) {
@@ -692,6 +706,11 @@ public class SessionImpl implements Session {
     public boolean joinTournamentTable(UUID roomId, UUID tableId, String playerName, String playerType, int skill, DeckCardLists deckList, String password) {
         try {
             if (isConnected()) {
+                // Workaround to fix Can't join table problem
+                if (deckList != null) {
+                    deckList.setCardLayout(null);
+                    deckList.setSideboardLayout(null);
+                }
                 return server.joinTournamentTable(sessionId, roomId, tableId, playerName, playerType, skill, deckList, password);
             }
         } catch (GameException ex) {
@@ -947,6 +966,7 @@ public class SessionImpl implements Session {
         return false;
     }
 
+
     @Override
     public boolean joinGame(UUID gameId) {
         try {
@@ -1156,7 +1176,7 @@ public class SessionImpl implements Session {
         return false;
     }
 
-//    @Override
+    //    @Override
 //    public boolean startChallenge(UUID roomId, UUID tableId, UUID challengeId) {
 //        try {
 //            if (isConnected()) {
@@ -1174,6 +1194,11 @@ public class SessionImpl implements Session {
     public boolean submitDeck(UUID tableId, DeckCardLists deck) {
         try {
             if (isConnected()) {
+                // Workaround to fix Can't join table problem
+                if (deck != null) {
+                    deck.setCardLayout(null);
+                    deck.setSideboardLayout(null);
+                }
                 return server.submitDeck(sessionId, tableId, deck);
             }
         } catch (GameException ex) {
@@ -1190,6 +1215,10 @@ public class SessionImpl implements Session {
     public boolean updateDeck(UUID tableId, DeckCardLists deck) {
         try {
             if (isConnected()) {
+                if (deck != null) {
+                    deck.setCardLayout(null);
+                    deck.setSideboardLayout(null);
+                }
                 server.updateDeck(sessionId, tableId, deck);
                 return true;
             }
@@ -1412,9 +1441,92 @@ public class SessionImpl implements Session {
     @Override
     public boolean endUserSession(String userSessionId) {
         try {
-            if (isConnected()) {
-                server.endUserSession(sessionId, userSessionId);
-                return true;
+            if (JOptionPane.showConfirmDialog(null, "Are you sure you mean to mute userSessionId " + userSessionId + '?', "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                if (isConnected()) {
+                    server.endUserSession(sessionId, userSessionId);
+                    return true;
+                }
+            }
+        } catch (MageException ex) {
+            handleMageException(ex);
+        } catch (Throwable t) {
+            handleThrowable(t);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean muteUserChat(String userName, long durationMinutes) {
+        try {
+            if (JOptionPane.showConfirmDialog(null, "Are you sure you mean to mute user " + userName + " for " + durationMinutes + " minutes?", "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                if (isConnected()) {
+                    server.muteUser(sessionId, userName, durationMinutes);
+                    return true;
+                }
+            }
+        } catch (MageException ex) {
+            handleMageException(ex);
+        } catch (Throwable t) {
+            handleThrowable(t);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean setActivation(String userName, boolean active) {
+        try {
+            if (JOptionPane.showConfirmDialog(null, "Are you sure you mean to set active to " + active + " for user: " + userName + '?', "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                if (isConnected()) {
+                    server.setActivation(sessionId, userName, active);
+                    return true;
+                }
+            }
+        } catch (MageException ex) {
+            handleMageException(ex);
+        } catch (Throwable t) {
+            handleThrowable(t);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean toggleActivation(String userName) {
+        try {
+            if (JOptionPane.showConfirmDialog(null, "Did you want to set user: " + userName + " to active?", "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                return setActivation(userName, true);
+            }
+            if (JOptionPane.showConfirmDialog(null, "Did you want to set user: " + userName + " to INactive?", "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                return setActivation(userName, false);
+            }
+            if (JOptionPane.showConfirmDialog(null, "Are you sure you mean to toggle activation for user: " + userName + '?', "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                if (isConnected()) {
+                    server.toggleActivation(sessionId, userName);
+                    return true;
+                }
+            }
+        } catch (MageException ex) {
+            handleMageException(ex);
+        } catch (Throwable t) {
+            handleThrowable(t);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean lockUser(String userName, long durationMinute) {
+        try {
+            if (JOptionPane.showConfirmDialog(null, "Are you sure you mean to lock user: " + userName + " for " + durationMinute + " minutes?", "WARNING",
+                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                if (isConnected()) {
+                    server.lockUser(sessionId, userName, durationMinute);
+                    return true;
+                }
             }
         } catch (MageException ex) {
             handleMageException(ex);
@@ -1437,8 +1549,8 @@ public class SessionImpl implements Session {
     }
 
     private void handleInvalidDeckException(InvalidDeckException iex) {
-        logger.warn(iex.getMessage() + "\n" + iex.getInvalid());
-        client.showError(iex.getMessage() + "\n" + iex.getInvalid());
+        logger.warn(iex.getMessage() + '\n' + iex.getInvalid());
+        client.showError(iex.getMessage() + '\n' + iex.getInvalid());
     }
 
     private void handleGameException(GameException ex) {
@@ -1456,17 +1568,17 @@ public class SessionImpl implements Session {
         String email = connection.getEmail();
         return email == null ? "" : email;
     }
- 
+
     private String getAuthToken() {
         String authToken = connection.getAuthToken();
         return authToken == null ? "" : authToken;
     }
- 
+
     @Override
     public boolean updatePreferencesForServer(UserData userData) {
         try {
             if (isConnected()) {
-                server.setUserData(connection.getUsername(), sessionId, userData);
+                server.setUserData(connection.getUsername(), sessionId, userData, null, null);
             }
             return true;
         } catch (MageException ex) {
@@ -1483,7 +1595,7 @@ public class SessionImpl implements Session {
             if (isConnected()) {
                 long startTime = System.nanoTime();
                 if (!server.ping(sessionId, pingInfo)) {
-                    logger.error("Ping failed: " + this.getUserName() + " Session: " + sessionId + " to MAGE server at " + connection.getHost() + ":" + connection.getPort());
+                    logger.error("Ping failed: " + this.getUserName() + " Session: " + sessionId + " to MAGE server at " + connection.getHost() + ':' + connection.getPort());
                     throw new MageException("Ping failed");
                 }
                 pingTime.add(System.nanoTime() - startTime);
@@ -1497,7 +1609,7 @@ public class SessionImpl implements Session {
                     sum += time;
                 }
                 milliSeconds = TimeUnit.MILLISECONDS.convert(sum / pingTime.size(), TimeUnit.NANOSECONDS);
-                pingInfo = lastPing + " (Av: " + (milliSeconds > 0 ? milliSeconds + "ms" : "<1ms") + ")";
+                pingInfo = lastPing + " (Av: " + (milliSeconds > 0 ? milliSeconds + "ms" : "<1ms") + ')';
             }
             return true;
         } catch (MageException ex) {

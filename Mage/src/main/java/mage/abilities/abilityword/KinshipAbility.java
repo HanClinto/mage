@@ -121,17 +121,17 @@ class KinshipBaseEffect extends OneShotEffect {
         Player controller = game.getPlayer(source.getControllerId());
         Permanent sourcePermanent = game.getPermanentOrLKIBattlefield(source.getSourceId());
         if (controller != null && sourcePermanent != null) {
-            if (controller.getLibrary().size() > 0) {
+            if (controller.getLibrary().hasCards()) {
                 Card card = controller.getLibrary().getFromTop(game);
                 if (card != null) {
                     Cards cards = new CardsImpl(card);
                     controller.lookAtCards(sourcePermanent.getName(), cards, game);
                     if (CardUtil.shareSubtypes(sourcePermanent, card, game)) {
-                        if (controller.chooseUse(outcome,new StringBuilder("Kinship - Reveal ").append(card.getLogName()).append("?").toString(), source, game)) {
+                        if (controller.chooseUse(outcome,new StringBuilder("Kinship - Reveal ").append(card.getLogName()).append('?').toString(), source, game)) {
                             controller.revealCards(sourcePermanent.getName(), cards, game);
                             for (Effect effect: kinshipEffects) {
                                 effect.setTargetPointer(new FixedTarget(card.getId()));
-                                if (effect.getEffectType().equals(EffectType.ONESHOT)) {
+                                if (effect.getEffectType() == EffectType.ONESHOT) {
                                     effect.apply(game, source);
                                 } else {
                                     if (effect instanceof ContinuousEffect) {

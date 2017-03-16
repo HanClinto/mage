@@ -44,7 +44,7 @@ public class CubeFactory {
     private static final CubeFactory INSTANCE = new CubeFactory();
     private static final Logger logger = Logger.getLogger(CubeFactory.class);
 
-    private Map<String, Class> draftCubes = new LinkedHashMap<String, Class>();
+    private final Map<String, Class> draftCubes = new LinkedHashMap<>();
 
     public static CubeFactory getInstance() {
         return INSTANCE;
@@ -55,10 +55,9 @@ public class CubeFactory {
     public DraftCube createDraftCube(String draftCubeName) {
 
         DraftCube draftCube;
-        Constructor<?> con;
         try {
-            con = draftCubes.get(draftCubeName).getConstructor(new Class[]{});
-            draftCube = (DraftCube)con.newInstance(new Object[] {});
+            Constructor<?> con = draftCubes.get(draftCubeName).getConstructor();
+            draftCube = (DraftCube)con.newInstance();
         } catch (Exception ex) {
             logger.fatal("CubeFactory error", ex);
             return null;
@@ -71,10 +70,9 @@ public class CubeFactory {
     public DraftCube createDeckDraftCube(String draftCubeName, Deck cubeFromDeck) {
 
         DraftCube draftCube;
-        Constructor<?> con;
         try {
-            con = draftCubes.get(draftCubeName).getConstructor(new Class[]{Deck.class});
-            draftCube = (DraftCube)con.newInstance(new Object[] {cubeFromDeck});
+            Constructor<?> con = draftCubes.get(draftCubeName).getConstructor(Deck.class);
+            draftCube = (DraftCube)con.newInstance(cubeFromDeck);
         } catch (Exception ex) {
             logger.fatal("CubeFactory error", ex);
             return null;

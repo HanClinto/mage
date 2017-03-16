@@ -61,7 +61,6 @@ import mage.view.TableClientMessage;
 import org.apache.log4j.Logger;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class User {
@@ -70,7 +69,7 @@ public class User {
 
     public enum UserState {
 
-        Created, Connected, Disconnected, Reconnected, Expired;
+        Created, Connected, Disconnected, Reconnected, Expired
     }
 
     private final UUID userId;
@@ -91,15 +90,32 @@ public class User {
     private UserState userState;
     private UserData userData;
     private UserStats userStats;
+    private Date chatLockedUntil;
+    private boolean active;
+    private Date lockedUntil;
+    private final AuthorizedUser authorizedUser;
+    private String clientVersion;
+    private String userIdStr;
 
-    public User(String userName, String host) {
+    public User(String userName, String host, AuthorizedUser authorizedUser) {
         this.userId = UUID.randomUUID();
         this.userName = userName;
         this.host = host;
         this.userState = UserState.Created;
-
         this.connectionTime = new Date();
         this.lastActivity = new Date();
+        if (authorizedUser != null) {
+            this.active = authorizedUser.active;
+            this.chatLockedUntil = authorizedUser.chatLockedUntil;
+            this.lockedUntil = authorizedUser.lockedUntil;
+            this.authorizedUser = authorizedUser;
+            updateAuthorizedUser();
+        } else {
+            this.active = true;
+            this.chatLockedUntil = null;
+            this.lockedUntil = null;
+            this.authorizedUser = null;
+        }
 
         this.tables = new ConcurrentHashMap<>();
         this.gameSessions = new ConcurrentHashMap<>();
@@ -110,6 +126,8 @@ public class User {
         this.watchedGames = new ArrayList<>();
         this.tablesToDelete = new ArrayList<>();
         this.sessionId = "";
+        this.clientVersion = "";
+        this.userIdStr = "";
     }
 
     public String getName() {
@@ -126,6 +144,18 @@ public class User {
 
     public String getSessionId() {
         return sessionId;
+    }
+
+    public Date getChatLockedUntil() {
+        return chatLockedUntil;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public Date getLockedUntil() {
+        return lockedUntil;
     }
 
     public void setSessionId(String sessionId) {
@@ -145,6 +175,37 @@ public class User {
         }
     }
 
+    public void setClientVersion(String clientVersion) {
+        this.clientVersion = clientVersion;
+    }
+
+    public void setUserIdStr(String userIdStr) {
+        this.userIdStr = userIdStr;
+    }
+
+    public String getUserIdStr() {
+        return this.userIdStr;
+    }
+
+    public String getClientVersion() {
+        return clientVersion;
+    }
+
+    public void setChatLockedUntil(Date chatLockedUntil) {
+        this.chatLockedUntil = chatLockedUntil;
+        updateAuthorizedUser();
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+        updateAuthorizedUser();
+    }
+
+    public void setLockedUntil(Date lockedUntil) {
+        this.lockedUntil = lockedUntil;
+        updateAuthorizedUser();
+    }
+
     public void lostConnection() {
         // Because watched games don't get restored after reconnection call stop watching
         for (Iterator<UUID> iterator = watchedGames.iterator(); iterator.hasNext();) {
@@ -156,7 +217,7 @@ public class User {
     }
 
     public boolean isConnected() {
-        return userState.equals(UserState.Connected) || userState.equals(UserState.Reconnected);
+        return userState == UserState.Connected || userState == UserState.Reconnected;
     }
 
     public String getDisconnectDuration() {
@@ -172,7 +233,7 @@ public class User {
 
         int minutes = (int) secondsLeft / 60;
         int seconds = (int) secondsLeft % 60;
-        return new StringBuilder(sign).append(Integer.toString(minutes)).append(":").append(seconds > 9 ? seconds : "0" + Integer.toString(seconds)).toString();
+        return new StringBuilder(sign).append(Integer.toString(minutes)).append(':').append(seconds > 9 ? seconds : '0' + Integer.toString(seconds)).toString();
     }
 
     public long getSecondsDisconnected() {
@@ -369,35 +430,35 @@ public class User {
     }
 
     public void remove(DisconnectReason reason) {
-        logger.trace("REMOVE " + getName() + " Draft sessions " + draftSessions.size());
+        logger.trace("REMOVE " + userName + " Draft sessions " + draftSessions.size());
         for (DraftSession draftSession : draftSessions.values()) {
             draftSession.setKilled();
         }
         draftSessions.clear();
-        logger.trace("REMOVE " + getName() + " Tournament sessions " + userTournaments.size());
+        logger.trace("REMOVE " + userName + " Tournament sessions " + userTournaments.size());
         for (UUID tournamentId : userTournaments.values()) {
-            TournamentManager.getInstance().quit(tournamentId, getId());
+            TournamentManager.getInstance().quit(tournamentId, userId);
         }
         userTournaments.clear();
-        logger.trace("REMOVE " + getName() + " Tables " + tables.size());
+        logger.trace("REMOVE " + userName + " Tables " + tables.size());
         for (Entry<UUID, Table> entry : tables.entrySet()) {
             logger.debug("-- leave tableId: " + entry.getValue().getId());
             TableManager.getInstance().leaveTable(userId, entry.getValue().getId());
         }
         tables.clear();
-        logger.trace("REMOVE " + getName() + " Game sessions: " + gameSessions.size());
+        logger.trace("REMOVE " + userName + " Game sessions: " + gameSessions.size());
         for (GameSessionPlayer gameSessionPlayer : gameSessions.values()) {
             logger.debug("-- kill game session of gameId: " + gameSessionPlayer.getGameId());
             GameManager.getInstance().quitMatch(gameSessionPlayer.getGameId(), userId);
             gameSessionPlayer.quitGame();
         }
         gameSessions.clear();
-        logger.trace("REMOVE " + getName() + " watched Games " + watchedGames.size());
+        logger.trace("REMOVE " + userName + " watched Games " + watchedGames.size());
         for (UUID gameId : watchedGames) {
             GameManager.getInstance().stopWatching(gameId, userId);
         }
         watchedGames.clear();
-        logger.trace("REMOVE " + getName() + " Chats ");
+        logger.trace("REMOVE " + userName + " Chats ");
         ChatManager.getInstance().removeUser(userId, reason);
     }
 
@@ -449,18 +510,18 @@ public class User {
                                     }
 
                                     if (!isConnected()) {
-                                        tournamentPlayer.setDisconnectInfo(" (discon. " + getDisconnectDuration() + ")");
+                                        tournamentPlayer.setDisconnectInfo(" (discon. " + getDisconnectDuration() + ')');
                                     } else {
                                         tournamentPlayer.setDisconnectInfo("");
                                     }
                                 }
                             } else {
                                 // can happen if tournamet has just ended
-                                logger.debug(getName() + " tournament player missing - tableId:" + table.getId(), null);
+                                logger.debug(userName + " tournament player missing - tableId:" + table.getId(), null);
                                 tablesToDelete.add(tableEntry.getKey());
                             }
                         } else {
-                            logger.error(getName() + " tournament key missing - tableId: " + table.getId(), null);
+                            logger.error(userName + " tournament key missing - tableId: " + table.getId(), null);
                         }
                     } else {
                         switch (table.getState()) {
@@ -487,25 +548,25 @@ public class User {
             tablesToDelete.clear();
         }
         if (waiting > 0) {
-            sb.append("Wait: ").append(waiting).append(" ");
+            sb.append("Wait: ").append(waiting).append(' ');
         }
         if (match > 0) {
-            sb.append("Match: ").append(match).append(" ");
+            sb.append("Match: ").append(match).append(' ');
         }
         if (sideboard > 0) {
-            sb.append("Sideb: ").append(sideboard).append(" ");
+            sb.append("Sideb: ").append(sideboard).append(' ');
         }
         if (draft > 0) {
-            sb.append("Draft: ").append(draft).append(" ");
+            sb.append("Draft: ").append(draft).append(' ');
         }
         if (construct > 0) {
-            sb.append("Const: ").append(construct).append(" ");
+            sb.append("Const: ").append(construct).append(' ');
         }
         if (tournament > 0) {
-            sb.append("Tourn: ").append(tournament).append(" ");
+            sb.append("Tourn: ").append(tournament).append(' ');
         }
-        if (watchedGames.size() > 0) {
-            sb.append("Watch: ").append(watchedGames.size()).append(" ");
+        if (!watchedGames.isEmpty()) {
+            sb.append("Watch: ").append(watchedGames.size()).append(' ');
         }
         return sb.toString();
     }
@@ -526,7 +587,7 @@ public class User {
         if (isConnected()) {
             return pingInfo;
         } else {
-            return " (discon. " + getDisconnectDuration() + ")";
+            return " (discon. " + getDisconnectDuration() + ')';
         }
     }
 
@@ -605,10 +666,10 @@ public class User {
         if (proto.getMatchesQuit() > 0) {
             quit.add("Q:" + Integer.toString(proto.getMatchesQuit()));
         }
-        if (quit.size() > 0) {
+        if (!quit.isEmpty()) {
             builder.append(" (");
             joinStrings(builder, quit, " ");
-            builder.append(")");
+            builder.append(')');
         }
         return builder.toString();
     }
@@ -637,10 +698,10 @@ public class User {
         if (proto.getTourneysQuitDuringRound() > 0) {
             quit.add("R:" + Integer.toString(proto.getTourneysQuitDuringRound()));
         }
-        if (quit.size() > 0) {
+        if (!quit.isEmpty()) {
             builder.append(" (");
             joinStrings(builder, quit, " ");
-            builder.append(")");
+            builder.append(')');
         }
         return builder.toString();
     }
@@ -710,7 +771,7 @@ public class User {
     public int getNumberOfNotStartedTables() {
         int number = 0;
         for (Table table : tables.values()) {
-            if (table.getState().equals(TableState.WAITING) || table.getState().equals(TableState.STARTING)) {
+            if (table.getState() == TableState.WAITING || table.getState() == TableState.STARTING) {
                 number++;
             }
         }
@@ -720,7 +781,7 @@ public class User {
     public int getNumberOfNotFinishedTables() {
         int number = 0;
         for (Table table : tables.values()) {
-            if (table.getState().equals(TableState.FINISHED)) {
+            if (table.getState() == TableState.FINISHED) {
                 number++;
             } else {
                 TableController tableController = TableManager.getInstance().getController(table.getId());
@@ -730,5 +791,22 @@ public class User {
             }
         }
         return number;
+    }
+
+    public String getEmail() {
+        if (authorizedUser != null) {
+            return authorizedUser.email;
+        }
+        return "";
+    }
+
+    private void updateAuthorizedUser() {
+        if (authorizedUser != null) {
+            authorizedUser.lastConnection = this.connectionTime;
+            authorizedUser.chatLockedUntil = this.chatLockedUntil;
+            authorizedUser.lockedUntil = this.lockedUntil;
+            authorizedUser.active = this.active;
+            AuthorizedUserRepository.instance.update(authorizedUser);
+        }
     }
 }

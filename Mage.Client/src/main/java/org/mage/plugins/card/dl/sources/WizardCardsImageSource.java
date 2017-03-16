@@ -354,7 +354,7 @@ public class WizardCardsImageSource implements CardImageSource {
         return doc;
     }
 
-    private Map<String, String> getLandVariations(Integer multiverseId, String cardName) throws IOException, NumberFormatException {
+    private Map<String, String> getLandVariations(int multiverseId, String cardName) throws IOException, NumberFormatException {
         String urlLandDocument = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + multiverseId;
         Document landDoc = getDocument(urlLandDocument);
         Elements variations = landDoc.select("a.variationlink");
@@ -373,11 +373,11 @@ public class WizardCardsImageSource implements CardImageSource {
         return links;
     }
 
-    private static String generateLink(Integer landMultiverseId) {
+    private static String generateLink(int landMultiverseId) {
         return "/Handlers/Image.ashx?multiverseid=" +landMultiverseId + "&type=card";
     }
 
-    private Integer getLocalizedMultiverseId(String preferedLanguage, Integer multiverseId) throws IOException {
+    private int getLocalizedMultiverseId(String preferedLanguage, Integer multiverseId) throws IOException {
         if (preferedLanguage.equals("en")) {
             return multiverseId;
         }
@@ -410,11 +410,11 @@ public class WizardCardsImageSource implements CardImageSource {
     private String normalizeName(String name) {
     	//Split card
     	if(name.contains("//")) {
-    		name = name.substring(0, name.indexOf("(") - 1);
+    		name = name.substring(0, name.indexOf('(') - 1);
     	}
     	//Special timeshifted name
     	if(name.startsWith("XX")) {
-    		name = name.substring(name.indexOf("(") + 1, name.length() - 1);
+    		name = name.substring(name.indexOf('(') + 1, name.length() - 1);
     	}
         return name.replace("\u2014", "-").replace("\u2019", "'")
                 .replace("\u00C6", "AE").replace("\u00E6", "ae")
@@ -440,11 +440,7 @@ public class WizardCardsImageSource implements CardImageSource {
         }
         String setNames = setsAliases.get(cardSet);
         if (setNames != null) {
-            Map<String, String> setLinks = sets.get(cardSet);
-            if (setLinks == null) {
-                setLinks = getSetLinks(cardSet);
-                sets.put(cardSet, setLinks);
-            }
+            Map<String, String> setLinks = sets.computeIfAbsent(cardSet, k -> getSetLinks(cardSet));
             String link = setLinks.get(card.getDownloadName().toLowerCase());
             if (link == null) {
                 int length = collectorId.length();
@@ -460,7 +456,7 @@ public class WizardCardsImageSource implements CardImageSource {
                 } else {
                     link = setLinks.get(Integer.toString(number - 21));
                     if (link != null) {
-                        link = link.replace(Integer.toString(number - 20), (Integer.toString(number - 20) + "a"));
+                        link = link.replace(Integer.toString(number - 20), (Integer.toString(number - 20) + 'a'));
                     }
                 }
             }
@@ -478,18 +474,18 @@ public class WizardCardsImageSource implements CardImageSource {
     }
 
     @Override
-    public Float getAverageSize() {
+    public float getAverageSize() {
         return 60.0f;
     }
 
     private final class GetImageLinkTask implements Runnable {
 
-        private final Integer multiverseId;
+        private final int multiverseId;
         private final String cardName;
         private final String preferedLanguage;
         private final ConcurrentHashMap setLinks;
 
-        public GetImageLinkTask(Integer multiverseId, String cardName, String preferedLanguage, ConcurrentHashMap setLinks) {
+        public GetImageLinkTask(int multiverseId, String cardName, String preferedLanguage, ConcurrentHashMap setLinks) {
             this.multiverseId = multiverseId;
             this.cardName = cardName;
             this.preferedLanguage = preferedLanguage;
@@ -513,12 +509,16 @@ public class WizardCardsImageSource implements CardImageSource {
     }
     
     @Override
-    public Integer getTotalImages() {
+    public int getTotalImages() {
         return -1;
     }
     
     @Override
-    public Boolean isTokenSource() {
+    public boolean isTokenSource() {
         return false;
+    }
+    
+    @Override
+    public void doPause(String httpImageUrl) {
     }
 }

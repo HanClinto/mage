@@ -9,7 +9,7 @@ import java.util.Properties;
 /**
  * @author noxx
  */
-public class PropertiesUtil {
+public final class PropertiesUtil {
 
     private static final Logger logger = Logger.getLogger(PropertiesUtil.class);
 
@@ -28,6 +28,7 @@ public class PropertiesUtil {
             }
         } else {
             logger.warn("No xmage.properties were found on classpath");
+
         }
     }
 

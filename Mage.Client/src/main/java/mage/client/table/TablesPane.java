@@ -29,7 +29,7 @@ package mage.client.table;
 
 import java.util.UUID;
 import javax.swing.JComponent;
-import mage.client.MageFrame;
+
 import mage.client.MagePane;
 import mage.client.SessionHandler;
 import mage.client.plugins.impl.Plugins;
@@ -139,5 +139,11 @@ public class TablesPane extends MagePane {
     @Override
     public void deactivated() {
         tablesPanel.stopTasks();
+    }
+
+    public void setTableFilter() {
+        if (tablesPanel != null) {
+            tablesPanel.setTableFilter();
+        }
     }
 }

@@ -49,25 +49,19 @@ public class BufferedImageBuilder {
 
     private void waitForImage(BufferedImage bufferedImage) {
         final ImageLoadStatus imageLoadStatus = new ImageLoadStatus();
-        bufferedImage.getHeight(new ImageObserver() {
-            @Override
-            public boolean imageUpdate(Image img, int infoflags, int x, int y, int width, int height) {
-                if (infoflags == ALLBITS) {
-                    imageLoadStatus.heightDone = true;
-                    return true;
-                }
-                return false;
+        bufferedImage.getHeight((img, infoflags, x, y, width, height) -> {
+            if (infoflags == ImageObserver.ALLBITS) {
+                imageLoadStatus.heightDone = true;
+                return true;
             }
+            return false;
         });
-        bufferedImage.getWidth(new ImageObserver() {
-            @Override
-            public boolean imageUpdate(Image img, int infoflags, int x, int y, int width, int height) {
-                if (infoflags == ALLBITS) {
-                    imageLoadStatus.widthDone = true;
-                    return true;
-                }
-                return false;
+        bufferedImage.getWidth((img, infoflags, x, y, width, height) -> {
+            if (infoflags == ImageObserver.ALLBITS) {
+                imageLoadStatus.widthDone = true;
+                return true;
             }
+            return false;
         });
         while (!imageLoadStatus.widthDone && !imageLoadStatus.heightDone) {
             try {
@@ -78,7 +72,7 @@ public class BufferedImageBuilder {
         }
     }
 
-    class ImageLoadStatus {
+    static class ImageLoadStatus {
         public boolean widthDone = false;
         public boolean heightDone = false;
     }

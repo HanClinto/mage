@@ -27,12 +27,11 @@
  */
 package org.mage.plugins.card.dl.sources;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
 import org.apache.log4j.Logger;
 import org.mage.plugins.card.images.CardDownloadData;
-import org.mage.plugins.card.images.DownloadPictures;
+
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  *
@@ -57,7 +56,7 @@ public class AltMtgOnlTokensImageSource implements CardImageSource {
     }
 
     @Override
-    public Float getAverageSize() {
+    public float getAverageSize() {
         return 26.7f;
     }
 
@@ -106,9 +105,9 @@ public class AltMtgOnlTokensImageSource implements CardImageSource {
         if (copyUrlToImage != null) {
             return;
         }
-        copyUrlToImage = new HashMap<String, String>();
-        copyImageToUrl = new HashMap<String, String>();
-        copyUrlToImageDone = new HashMap<String, Integer>();
+        copyUrlToImage = new HashMap<>();
+        copyImageToUrl = new HashMap<>();
+        copyUrlToImageDone = new HashMap<>();
 
         copyUrlToImage.put("SCG_CC_002-Penguin.jpg", "BIRD.WU.BIRD.CREATURE.1.1.full.jpg");
         copyUrlToImage.put("SCG_CC_005-Vampire.jpg", "VAMPIRE.B.VAMPIRE.CREATURE.1.1.full.jpg");
@@ -164,7 +163,7 @@ public class AltMtgOnlTokensImageSource implements CardImageSource {
     }
 
     @Override
-    public Integer getTotalImages() {
+    public int getTotalImages() {
         if (copyUrlToImage == null) {
             setupLinks();
         }
@@ -175,7 +174,11 @@ public class AltMtgOnlTokensImageSource implements CardImageSource {
     }
     
     @Override
-    public Boolean isTokenSource() {
+    public boolean isTokenSource() {
         return true;
+    }
+    
+    @Override
+    public void doPause(String httpImageUrl) {
     }
 }

@@ -33,22 +33,23 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+
 import mage.abilities.common.ZoneChangeTriggeredAbility;
 import mage.abilities.costs.Cost;
 import mage.abilities.keyword.ProtectionAbility;
-import mage.abilities.mana.ManaAbility;
+import mage.abilities.mana.ActivatedManaAbilityImpl;
+import mage.constants.AbilityType;
 import mage.constants.Zone;
 import mage.game.Game;
 import mage.util.ThreadLocalStringBuilder;
 import org.apache.log4j.Logger;
 
 /**
- *
- * @author BetaSteward_at_googlemail.com
  * @param <T>
+ * @author BetaSteward_at_googlemail.com
  */
 public class AbilitiesImpl<T extends Ability> extends ArrayList<T> implements Abilities<T> {
-    
+
     private static final Logger logger = Logger.getLogger(AbilitiesImpl.class);
 
     private static final ThreadLocalStringBuilder threadLocalBuilder = new ThreadLocalStringBuilder(200);
@@ -92,7 +93,7 @@ public class AbilitiesImpl<T extends Ability> extends ArrayList<T> implements Ab
                 continue;
             }
             if (ability instanceof SpellAbility) {
-                if (ability.getAdditionalCostsRuleVisible() && ability.getCosts().size() > 0) {
+                if (ability.getAdditionalCostsRuleVisible() && !ability.getCosts().isEmpty()) {
                     StringBuilder sbRule = threadLocalBuilder.get();
                     for (Cost cost : ability.getCosts()) {
                         if (cost.getText() != null && !cost.getText().isEmpty()) {
@@ -106,7 +107,7 @@ public class AbilitiesImpl<T extends Ability> extends ArrayList<T> implements Ab
                 }
                 String rule = ability.getRule();
                 if (rule != null) {
-                    if (rule.length() > 0) {
+                    if (!rule.isEmpty()) {
                         rules.add(Character.toUpperCase(rule.charAt(0)) + rule.substring(1));
                     }
                 } else { // logging so we can still can be made aware of rule problems a card has
@@ -143,24 +144,35 @@ public class AbilitiesImpl<T extends Ability> extends ArrayList<T> implements Ab
     }
 
     @Override
-    public Abilities<ManaAbility> getManaAbilities(Zone zone) {
-        Abilities<ManaAbility> abilities = new AbilitiesImpl<>();
+    public Abilities<ActivatedManaAbilityImpl> getActivatedManaAbilities(Zone zone) {
+        Abilities<ActivatedManaAbilityImpl> abilities = new AbilitiesImpl<>();
         for (T ability : this) {
-            if (ability instanceof ManaAbility && ability.getZone().match(zone)) {
-                abilities.add((ManaAbility) ability);
+            if (ability instanceof ActivatedManaAbilityImpl && ability.getZone().match(zone)) {
+                abilities.add((ActivatedManaAbilityImpl) ability);
             }
         }
         return abilities;
     }
 
     @Override
-    public Abilities<ManaAbility> getAvailableManaAbilities(Zone zone, Game game) {
-        Abilities<ManaAbility> abilities = new AbilitiesImpl<>();
+    public Abilities<ActivatedManaAbilityImpl> getAvailableActivatedManaAbilities(Zone zone, Game game) {
+        Abilities<ActivatedManaAbilityImpl> abilities = new AbilitiesImpl<>();
         for (T ability : this) {
-            if (ability instanceof ManaAbility && ability.getZone().match(zone)) {
-                if ((((ManaAbility) ability).canActivate(ability.getControllerId(), game))) {
-                    abilities.add((ManaAbility) ability);
+            if (ability instanceof ActivatedManaAbilityImpl && ability.getZone().match(zone)) {
+                if ((((ActivatedManaAbilityImpl) ability).canActivate(ability.getControllerId(), game))) {
+                    abilities.add((ActivatedManaAbilityImpl) ability);
                 }
+            }
+        }
+        return abilities;
+    }
+
+    @Override
+    public Abilities<Ability> getManaAbilities(Zone zone) {
+        Abilities<Ability> abilities = new AbilitiesImpl<>();
+        for (T ability : this) {
+            if (ability.getAbilityType() == AbilityType.MANA && ability.getZone().match(zone)) {
+                abilities.add(ability);
             }
         }
         return abilities;
@@ -245,7 +257,7 @@ public class AbilitiesImpl<T extends Ability> extends ArrayList<T> implements Ab
 
     @Override
     public boolean contains(T ability) {
-        for (Iterator<T> iterator = this.iterator(); iterator.hasNext();) { // simple loop can cause java.util.ConcurrentModificationException
+        for (Iterator<T> iterator = this.iterator(); iterator.hasNext(); ) { // simple loop can cause java.util.ConcurrentModificationException
             T test = iterator.next();
             // Checking also by getRule() without other restrictions is a problem when a triggered ability will be copied to a permanent that had the same ability
             // already before the copy. Because then it keeps the triggered ability twice and it triggers twice.
@@ -275,6 +287,7 @@ public class AbilitiesImpl<T extends Ability> extends ArrayList<T> implements Ab
 
     @Override
     public boolean containsAll(Abilities<T> abilities) {
+
         if (this.size() < abilities.size()) {
             return false;
         }

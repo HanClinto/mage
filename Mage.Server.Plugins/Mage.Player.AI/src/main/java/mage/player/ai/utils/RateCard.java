@@ -21,7 +21,7 @@ import java.util.*;
  *
  * @author nantuko
  */
-public class RateCard {
+public final class RateCard {
 
     private static Map<String, Integer> ratings;
     private static final Map<String, Integer> rated = new HashMap<>();
@@ -191,7 +191,7 @@ public class RateCard {
             }
             return 2 * (converted - colorPenalty + 1);
         }
-        final Map<String, Integer> singleCount = new HashMap<String, Integer>();
+        final Map<String, Integer> singleCount = new HashMap<>();
         int maxSingleCount = 0;
         for (String symbol : card.getManaCost().getSymbols()) {
             int count = 0;
@@ -257,7 +257,7 @@ public class RateCard {
      * @return
      */
     public static int getDifferentColorManaCount(Card card) {
-        Set<String> symbols = new HashSet<String>();
+        Set<String> symbols = new HashSet<>();
         for (String symbol : card.getManaCost().getSymbols()) {
             if (isColoredMana(symbol)) {
                 symbols.add(symbol);

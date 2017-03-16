@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * @author noxx
  */
-public class EntityManagerTest {
+public final class EntityManagerTest {
 
     private static DateFormat timeFormatter = SimpleDateFormat.getTimeInstance(SimpleDateFormat.FULL);
 
@@ -23,7 +23,7 @@ public class EntityManagerTest {
             System.out.print("   arguments=[ ");
             if (log.getArguments() != null) {
                 for (String argument : log.getArguments()) {
-                    System.out.print("arg=" + argument + " ");
+                    System.out.print("arg=" + argument + ' ');
                 }
             }
             System.out.println("]");

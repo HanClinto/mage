@@ -53,6 +53,14 @@ public class CardEventSource implements EventSource<Event>, Serializable {
         dispatcher.fireEvent(new Event(card, message, number));
     }
 
+    public void removeSpecificCard(SimpleCardView card, String message) {
+        dispatcher.fireEvent(new Event(card, message));
+    }
+
+    public void addSpecificCard(SimpleCardView card, String message) {
+        dispatcher.fireEvent(new Event(card, message));
+    }
+
     public void doubleClick(SimpleCardView card, String message) {
         dispatcher.fireEvent(new Event(card, message));
     }

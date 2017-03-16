@@ -28,11 +28,13 @@
 package mage;
 
 import java.io.Serializable;
+import java.util.Objects;
+
 import mage.util.Copyable;
 
 public class MageInt implements Serializable, Copyable<MageInt> {
 
-    public static MageInt EmptyMageInt = new MageInt(Integer.MIN_VALUE, null) {
+    public static final MageInt EmptyMageInt = new MageInt(Integer.MIN_VALUE, "") {
 
         private static final String exceptionMessage = "MageInt.EmptyMageInt can't be modified.";
 
@@ -75,7 +77,7 @@ public class MageInt implements Serializable, Copyable<MageInt> {
 
     @Override
     public MageInt copy() {
-        if (this == EmptyMageInt) {
+        if (Objects.equals(this, EmptyMageInt)) {
             return this;
         }
         return new MageInt(baseValue, baseValueModified, boostedValue, cardValue);

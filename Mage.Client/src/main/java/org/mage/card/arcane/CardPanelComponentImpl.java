@@ -2,29 +2,12 @@ package org.mage.card.arcane;
 
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
-import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.UUID;
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import mage.cards.action.ActionCallback;
 import mage.client.dialog.PreferencesDialog;
 import mage.client.util.ImageCaches;
 import mage.client.util.ImageHelper;
 import mage.components.ImagePanel;
+import mage.components.ImagePanelStyle;
 import mage.constants.AbilityType;
 import mage.utils.CardUtil;
 import mage.view.CardView;
@@ -34,10 +17,19 @@ import mage.view.StackAbilityView;
 import net.java.truevfs.access.TFile;
 import org.apache.log4j.Logger;
 import org.jdesktop.swingx.graphics.GraphicsUtilities;
-import static org.mage.plugins.card.constants.Constants.THUMBNAIL_SIZE_FULL;
 import org.mage.plugins.card.dl.sources.DirectLinksForDownload;
 import org.mage.plugins.card.images.ImageCache;
 import org.mage.plugins.card.utils.impl.ImageManagerImpl;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.UUID;
+
+import static org.mage.plugins.card.constants.Constants.THUMBNAIL_SIZE_FULL;
 
 /**
  * Class for drawing the mage card object by using a form based JComponent approach
@@ -84,7 +76,7 @@ public class CardPanelComponentImpl extends CardPanel {
 
     private final static Map<Key, BufferedImage> IMAGE_CACHE;
 
-    class Key {
+    static class Key {
 
         final int width;
         final int height;
@@ -179,12 +171,7 @@ public class CardPanelComponentImpl extends CardPanel {
     }
 
     static {
-        IMAGE_CACHE = ImageCaches.register(new MapMaker().softValues().makeComputingMap(new Function<Key, BufferedImage>() {
-            @Override
-            public BufferedImage apply(Key key) {
-                return createImage(key);
-            }
-        }));
+        IMAGE_CACHE = ImageCaches.register(new MapMaker().softValues().makeComputingMap((Function<Key, BufferedImage>) key -> createImage(key)));
     }
 
     public CardPanelComponentImpl(CardView newGameCard, UUID gameId, final boolean loadImage, ActionCallback callback, final boolean foil, Dimension dimension) {
@@ -219,9 +206,9 @@ public class CardPanelComponentImpl extends CardPanel {
         
         // Ability icon
         if (newGameCard.isAbility()) {
-            if (AbilityType.TRIGGERED.equals(newGameCard.getAbilityType())) {
+            if (newGameCard.getAbilityType() == AbilityType.TRIGGERED) {
                 setTypeIcon(ImageManagerImpl.getInstance().getTriggeredAbilityImage(), "Triggered Ability");
-            } else if (AbilityType.ACTIVATED.equals(newGameCard.getAbilityType())) {
+            } else if (newGameCard.getAbilityType() == AbilityType.ACTIVATED) {
                 setTypeIcon(ImageManagerImpl.getInstance().getActivatedAbilityImage(), "Activated Ability");
             }
         }
@@ -246,7 +233,7 @@ public class CardPanelComponentImpl extends CardPanel {
         // PT Text
         ptText = new GlowText();
         if (CardUtil.isCreature(gameCard)) {
-            ptText.setText(gameCard.getPower() + "/" + gameCard.getToughness());
+            ptText.setText(gameCard.getPower() + '/' + gameCard.getToughness());
         } else if (CardUtil.isPlaneswalker(gameCard)) {
             ptText.setText(gameCard.getLoyalty());
         }
@@ -257,7 +244,7 @@ public class CardPanelComponentImpl extends CardPanel {
 
         // Sickness overlay
         BufferedImage sickness = ImageManagerImpl.getInstance().getSicknessImage();
-        overlayPanel = new ImagePanel(sickness, ImagePanel.SCALED);
+        overlayPanel = new ImagePanel(sickness, ImagePanelStyle.SCALED);
         overlayPanel.setOpaque(false);
         add(overlayPanel);
 
@@ -346,7 +333,7 @@ public class CardPanelComponentImpl extends CardPanel {
 
         g2d.drawImage(
                 IMAGE_CACHE.get(
-                        new Key(getWidth(), getHeight(), getCardWidth(), getCardHeight(), getCardXOffset(), getCardYOffset(), 
+                        new Key(getWidth(), getHeight(), getCardWidth(), getCardHeight(), getCardXOffset(), getCardYOffset(),
                                 hasImage, isSelected(), isChoosable(), gameCard.isPlayable(), gameCard.isCanAttack())), 
                 0, 0, null);
         g2d.dispose();       
@@ -472,7 +459,7 @@ public class CardPanelComponentImpl extends CardPanel {
         ptText.setVisible(showText);
 
         if (showText) {
-            int fontSize = (int) cardHeight / 11;
+            int fontSize = cardHeight / 11;
             titleText.setFont(getFont().deriveFont(Font.BOLD, fontSize));
 
             int titleX = Math.round(cardWidth * (20f / 480));
@@ -533,33 +520,27 @@ public class CardPanelComponentImpl extends CardPanel {
         //final CardView gameCard = this.gameCard;
         final int stamp = ++updateArtImageStamp;
 
-        Util.threadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final BufferedImage srcImage;
-                    if (gameCard.isFaceDown()) {
-                        srcImage = getFaceDownImage();
-                    } else if (getCardWidth() > THUMBNAIL_SIZE_FULL.width) {
-                        srcImage = ImageCache.getImage(gameCard, getCardWidth(), getCardHeight());
-                    } else {
-                        srcImage = ImageCache.getThumbnail(gameCard);
-                    }
-                    UI.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (stamp == updateArtImageStamp) {
-                                hasImage = srcImage != null;
-                                setText(gameCard);
-                                setImage(srcImage);
-                            }
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } catch (Error err) {
-                    err.printStackTrace();
+        Util.threadPool.submit(() -> {
+            try {
+                final BufferedImage srcImage;
+                if (gameCard.isFaceDown()) {
+                    srcImage = getFaceDownImage();
+                } else if (getCardWidth() > THUMBNAIL_SIZE_FULL.width) {
+                    srcImage = ImageCache.getImage(gameCard, getCardWidth(), getCardHeight());
+                } else {
+                    srcImage = ImageCache.getThumbnail(gameCard);
                 }
+                UI.invokeLater(() -> {
+                    if (stamp == updateArtImageStamp) {
+                        hasImage = srcImage != null;
+                        setText(gameCard);
+                        setImage(srcImage);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            } catch (Error err) {
+                err.printStackTrace();
             }
         });
     }
@@ -591,9 +572,9 @@ public class CardPanelComponentImpl extends CardPanel {
 
         // Update card text
         if (CardUtil.isCreature(card) && CardUtil.isPlaneswalker(card)) {
-            ptText.setText(card.getPower() + "/" + card.getToughness() + " (" + card.getLoyalty() + ")");
+            ptText.setText(card.getPower() + '/' + card.getToughness() + " (" + card.getLoyalty() + ')');
         } else if (CardUtil.isCreature(card)) {
-            ptText.setText(card.getPower() + "/" + card.getToughness());
+            ptText.setText(card.getPower() + '/' + card.getToughness());
         } else if (CardUtil.isPlaneswalker(card)) {
             ptText.setText(card.getLoyalty());
         } else {

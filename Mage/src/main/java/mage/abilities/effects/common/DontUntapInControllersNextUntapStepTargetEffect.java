@@ -100,7 +100,7 @@ public class DontUntapInControllersNextUntapStepTargetEffect extends ContinuousR
         MageObject mageObject = game.getObject(source.getSourceId());
         Permanent permanentToUntap = game.getPermanent((event.getTargetId()));
         if (permanentToUntap != null && mageObject != null) {
-            return permanentToUntap.getLogName() + " doesn't untap (" + mageObject.getLogName() + ")";
+            return permanentToUntap.getLogName() + " doesn't untap (" + mageObject.getLogName() + ')';
         }
         return null;
     }
@@ -114,7 +114,7 @@ public class DontUntapInControllersNextUntapStepTargetEffect extends ContinuousR
     public boolean applies(GameEvent event, Ability source, Game game) {
         // the check if a permanent untap pahse is already handled is needed if multiple effects are added to prevent untap in next untap step of controller
         // if we don't check it for every untap step of a turn only one effect would be consumed instead of all be valid for the next untap step
-        if (GameEvent.EventType.UNTAP_STEP.equals(event.getType())) {
+        if (event.getType() == EventType.UNTAP_STEP) {
             boolean allHandled = true;
             for (UUID targetId : getTargetPointer().getTargets(game, source)) {
                 Permanent permanent = game.getPermanent(targetId);
@@ -158,7 +158,7 @@ public class DontUntapInControllersNextUntapStepTargetEffect extends ContinuousR
         if (staticText != null && !staticText.isEmpty()) {
             return staticText;
         }
-        if (targetName != null && targetName.length() > 0) {
+        if (targetName != null && !targetName.isEmpty()) {
             if (targetName.equals("Those creatures") || targetName.equals("They")) {
                 return targetName + " don't untap during their controller's next untap step";
             } else

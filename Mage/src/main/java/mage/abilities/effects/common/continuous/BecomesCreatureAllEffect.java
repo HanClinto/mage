@@ -76,7 +76,7 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
                 switch (layer) {
                     case TypeChangingEffects_4:
                         if (sublayer == SubLayer.NA) {
-                            if (token.getCardType().size() > 0) {
+                            if (!token.getCardType().isEmpty()) {
                                 for (CardType t : token.getCardType()) {
                                     if (!permanent.getCardType().contains(t)) {
                                         permanent.getCardType().add(t);
@@ -86,7 +86,7 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
                             if (type == null) {
                                 permanent.getSubtype(game).clear();
                             }
-                            if (token.getSubtype(game).size() > 0) {
+                            if (!token.getSubtype(game).isEmpty()) {
                                 permanent.getSubtype(game).addAll(token.getSubtype(game));
                             }
                         }
@@ -100,7 +100,7 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
                         break;
                     case AbilityAddingRemovingEffects_6:
                         if (sublayer == SubLayer.NA) {
-                            if (token.getAbilities().size() > 0) {
+                            if (!token.getAbilities().isEmpty()) {
                                 for (Ability ability : token.getAbilities()) {
                                     permanent.addAbility(ability, source.getSourceId(), game);
                                 }
@@ -135,12 +135,18 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
     @Override
     public String getText(Mode mode) {
         StringBuilder sb = new StringBuilder();
-        if (!"".equals(duration.toString())) {
+        if (duration.toString() != null && !duration.toString().isEmpty()) {
             sb.append(duration.toString()).append(", ");
         }
+        sb.append("all ");
         sb.append(filter.getMessage());
-        sb.append(" become a ").append(token.getDescription());
-        if (type != null && type.length() > 0) {
+        if (duration.toString() != null && duration.toString().isEmpty()) {
+            sb.append(" are ");
+        } else {
+            sb.append(" become ");
+        }
+        sb.append(token.getDescription());
+        if (type != null && !type.isEmpty()) {
             sb.append(". They are still ").append(type);
         }
         return sb.toString();

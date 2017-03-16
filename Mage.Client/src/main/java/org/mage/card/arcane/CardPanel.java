@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -72,7 +71,7 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
 
     private final List<MagePermanent> links = new ArrayList<>();
 
-    public JPanel buttonPanel;
+    public final JPanel buttonPanel;
     private JButton dayNightButton;
     private JButton showCopySourceButton;
 
@@ -89,11 +88,11 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
     private ActionCallback callback;
 
     protected boolean tooltipShowing;
-    protected TextPopup tooltipText;
+    protected final TextPopup tooltipText;
     protected UUID gameId;
     private TransferData data = new TransferData();
 
-    private boolean isPermanent;
+    private final boolean isPermanent;
     private boolean hasSickness;
     private String zone;
 
@@ -139,17 +138,14 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
             dayNightButton.setToolTipText("This permanent is a double faced card. To see the back face card, push this button or turn mouse wheel down while hovering with the mouse pointer over the permanent.");
             BufferedImage day = ImageManagerImpl.getInstance().getDayImage();
             dayNightButton.setIcon(new ImageIcon(day));
-            dayNightButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    // if card is being rotated, ignore action performed
-                    // if card is tapped, no visual transforming is possible (implementation limitation)
-                    // if card is permanent, it will be rotated by Mage, so manual rotate should be possible
-                    if (animationInProgress || isTapped() || isPermanent) {
-                        return;
-                    }
-                    Animation.transformCard(CardPanel.this, CardPanel.this, true);
+            dayNightButton.addActionListener(e -> {
+                // if card is being rotated, ignore action performed
+                // if card is tapped, no visual transforming is possible (implementation limitation)
+                // if card is permanent, it will be rotated by Mage, so manual rotate should be possible
+                if (animationInProgress || isTapped() || isPermanent) {
+                    return;
                 }
+                Animation.transformCard(CardPanel.this, CardPanel.this, true);
             });
 
             // Add it
@@ -164,12 +160,9 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
             showCopySourceButton.setToolTipText("This permanent is copying a target. To see original card, push this button or turn mouse wheel down while hovering with the mouse pointer over the permanent.");
             showCopySourceButton.setVisible(((PermanentView) this.gameCard).isCopy());
             showCopySourceButton.setIcon(new ImageIcon(ImageManagerImpl.getInstance().getCopyInformIconImage()));
-            showCopySourceButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    ActionCallback callback = Plugins.getInstance().getActionCallback();
-                    ((MageActionCallback) callback).enlargeCard(EnlargeMode.COPY);
-                }
+            showCopySourceButton.addActionListener(e -> {
+                ActionCallback callback1 = Plugins.getInstance().getActionCallback();
+                ((MageActionCallback) callback1).enlargeCard(EnlargeMode.COPY);
             });
 
             // Add it
@@ -320,6 +313,8 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
 
     /**
      * Overridden by different card rendering styles
+     *
+     * @param g
      */
     protected abstract void paintCard(Graphics2D g);
 
@@ -510,6 +505,8 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
      * However, they should ALSO call repaint() after the superclass call to
      * this function, that can't be done here as the overriders may need to do
      * things both before and after this call before repainting.
+     *
+     * @param card
      */
     @Override
     public void update(CardView card) {
@@ -560,8 +557,10 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
             } else {
                 transformIcon = ImageManagerImpl.getInstance().getDayImage();
             }
-            dayNightButton.setVisible(!isPermanent);
-            dayNightButton.setIcon(new ImageIcon(transformIcon));
+            if (dayNightButton != null) {
+                dayNightButton.setVisible(!isPermanent);
+                dayNightButton.setIcon(new ImageIcon(transformIcon));
+            }
         }
     }
 
@@ -575,12 +574,12 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
 
         int cx = getCardX() - component.x;
         int cy = getCardY() - component.y;
-        int cw = getCardWidth();
-        int ch = getCardHeight();
+        int cw = cardWidth;
+        int ch = cardHeight;
         if (isTapped()) {
             cy = ch - cw + cx;
             ch = cw;
-            cw = getCardHeight();
+            cw = cardHeight;
         }
 
         return x >= cx && x <= cx + cw && y >= cy && y <= cy + ch;
@@ -682,17 +681,17 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
         StringBuilder sbType = new StringBuilder();
 
         for (String superType : card.getSuperTypes()) {
-            sbType.append(superType).append(" ");
+            sbType.append(superType).append(' ');
         }
 
         for (CardType cardType : card.getCardTypes()) {
-            sbType.append(cardType.toString()).append(" ");
+            sbType.append(cardType.toString()).append(' ');
         }
 
-        if (card.getSubTypes().size() > 0) {
+        if (!card.getSubTypes().isEmpty()) {
             sbType.append("- ");
             for (String subType : card.getSubTypes()) {
-                sbType.append(subType).append(" ");
+                sbType.append(subType).append(' ');
             }
         }
 
@@ -703,30 +702,30 @@ public abstract class CardPanel extends MagePermanent implements MouseListener, 
         StringBuilder sb = new StringBuilder();
         if (card instanceof StackAbilityView || card instanceof AbilityView) {
             for (String rule : card.getRules()) {
-                sb.append("\n").append(rule);
+                sb.append('\n').append(rule);
             }
         } else {
             sb.append(card.getName());
-            if (card.getManaCost().size() > 0) {
-                sb.append("\n").append(card.getManaCost());
+            if (!card.getManaCost().isEmpty()) {
+                sb.append('\n').append(card.getManaCost());
             }
-            sb.append("\n").append(cardType);
+            sb.append('\n').append(cardType);
             if (card.getColor().hasColor()) {
-                sb.append("\n").append(card.getColor().toString());
+                sb.append('\n').append(card.getColor().toString());
             }
             if (card.getCardTypes().contains(CardType.CREATURE)) {
-                sb.append("\n").append(card.getPower()).append("/").append(card.getToughness());
+                sb.append('\n').append(card.getPower()).append('/').append(card.getToughness());
             } else if (card.getCardTypes().contains(CardType.PLANESWALKER)) {
-                sb.append("\n").append(card.getLoyalty());
+                sb.append('\n').append(card.getLoyalty());
             }
             if (card.getRules() == null) {
-                card.overrideRules(new ArrayList<String>());
+                card.overrideRules(new ArrayList<>());
             }
             for (String rule : card.getRules()) {
-                sb.append("\n").append(rule);
+                sb.append('\n').append(rule);
             }
-            if (card.getExpansionSetCode() != null && card.getExpansionSetCode().length() > 0) {
-                sb.append("\n").append(card.getCardNumber()).append(" - ");
+            if (card.getExpansionSetCode() != null && !card.getExpansionSetCode().isEmpty()) {
+                sb.append('\n').append(card.getCardNumber()).append(" - ");
                 sb.append(card.getExpansionSetCode()).append(" - ");
                 sb.append(card.getRarity().toString());
             }

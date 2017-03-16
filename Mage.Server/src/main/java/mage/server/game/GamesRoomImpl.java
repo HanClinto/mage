@@ -29,7 +29,6 @@ package mage.server.game;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import mage.MageException;
 import mage.cards.decks.DeckCardLists;
 import mage.constants.TableState;
@@ -58,7 +58,6 @@ import mage.view.UsersView;
 import org.apache.log4j.Logger;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class GamesRoomImpl extends RoomImpl implements GamesRoom, Serializable {
@@ -73,16 +72,13 @@ public class GamesRoomImpl extends RoomImpl implements GamesRoom, Serializable {
     private final ConcurrentHashMap<UUID, Table> tables = new ConcurrentHashMap<>();
 
     public GamesRoomImpl() {
-        UPDATE_EXECUTOR.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    update();
-                } catch (Exception ex) {
-                    LOGGER.fatal("Games room update exception! " + ex.toString(), ex);
-                }
-
+        UPDATE_EXECUTOR.scheduleAtFixedRate(() -> {
+            try {
+                update();
+            } catch (Exception ex) {
+                LOGGER.fatal("Games room update exception! " + ex.toString(), ex);
             }
+
         }, 2, 2, TimeUnit.SECONDS);
     }
 
@@ -92,10 +88,10 @@ public class GamesRoomImpl extends RoomImpl implements GamesRoom, Serializable {
     }
 
     private void update() {
-        ArrayList<TableView> tableList = new ArrayList<>();
-        ArrayList<MatchView> matchList = new ArrayList<>();
         List<Table> allTables = new ArrayList<>(tables.values());
-        Collections.sort(allTables, new TableListSorter());
+        allTables.sort(new TableListSorter());
+        ArrayList<MatchView> matchList = new ArrayList<>();
+        ArrayList<TableView> tableList = new ArrayList<>();
         for (Table table : allTables) {
             if (table.getState() != TableState.FINISHED) {
                 tableList.add(new TableView(table));
@@ -136,7 +132,7 @@ public class GamesRoomImpl extends RoomImpl implements GamesRoom, Serializable {
             }
         }
 
-        Collections.sort(users, new UserNameSorter());
+        users.sort((one, two) -> one.getUserName().compareToIgnoreCase(two.getUserName()));
         List<RoomUsersView> roomUserInfo = new ArrayList<>();
         roomUserInfo.add(new RoomUsersView(users,
                 GameManager.getInstance().getNumberActiveGames(),
@@ -235,11 +231,11 @@ class TableListSorter implements Comparator<Table> {
     @Override
     public int compare(Table one, Table two) {
         if (one.getState() != null && two.getState() != null) {
-            if (!TableState.SIDEBOARDING.equals(one.getState()) && !TableState.DUELING.equals(one.getState())) {
+            if (TableState.SIDEBOARDING != one.getState() && TableState.DUELING != one.getState()) {
                 if (one.getState().compareTo(two.getState()) != 0) {
                     return one.getState().compareTo(two.getState());
                 }
-            } else if (!TableState.SIDEBOARDING.equals(two.getState()) && !TableState.DUELING.equals(two.getState())) {
+            } else if (TableState.SIDEBOARDING != two.getState() && TableState.DUELING != two.getState()) {
                 if (one.getState().compareTo(two.getState()) != 0) {
                     return one.getState().compareTo(two.getState());
                 }

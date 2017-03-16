@@ -37,11 +37,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -56,10 +59,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.border.Border;
 import javax.swing.filechooser.FileFilter;
 import mage.client.MageFrame;
 import mage.client.SessionHandler;
+import mage.client.components.KeyBindButton;
 import mage.client.util.Config;
 import mage.client.util.GUISizeHelper;
 import mage.client.util.ImageHelper;
@@ -93,6 +98,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     public static final String KEY_GAME_SHOW_STORM_COUNTER = "gameShowStormCounter";
     public static final String KEY_GAME_CONFIRM_EMPTY_MANA_POOL = "gameConfirmEmptyManaPool";
     public static final String KEY_GAME_ASK_MOVE_TO_GRAVE_ORDER = "gameAskMoveToGraveORder";
+    public static final String KEY_GAME_USE_PROFANITY_FILTER = "gameUseProfanityFilter";
 
     public static final String KEY_GUI_TABLE_FONT_SIZE = "guiTableFontSize";
     public static final String KEY_GUI_CHAT_FONT_SIZE = "guiChatFontSize";
@@ -121,8 +127,8 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
     public static final String KEY_CARD_RENDERING_FALLBACK = "cardRenderingFallback";
     public static final String KEY_CARD_RENDERING_REMINDER_TEXT = "cardRenderingReminderText";
-    public static final String KEY_CARD_RENDERING_SET_SYMBOL = "cardRenderingSetSymbol";        
-    
+    public static final String KEY_CARD_RENDERING_SET_SYMBOL = "cardRenderingSetSymbol";
+
     public static final String KEY_BACKGROUND_IMAGE = "backgroundImage";
     public static final String KEY_BATTLEFIELD_IMAGE = "battlefieldImage";
     public static final String KEY_BACKGROUND_IMAGE_DEFAULT = "backgroundImagedDefault";
@@ -176,10 +182,18 @@ public class PreferencesDialog extends javax.swing.JDialog {
     public static final String KEY_TABLES_COLUMNS_WIDTH = "tablePanelColumnWidth";
     public static final String KEY_TABLES_COLUMNS_ORDER = "tablePanelColumnSort";
 
+    // last sort settings used in deck editor
+    public static final String KEY_DECK_EDITOR_LAST_SORT = "deckEditorLastSort";
+    public static final String KEY_DECK_EDITOR_LAST_SEPARATE_CREATURES = "deckEditorLastSeparateCreatures";
+
     // positions of divider bars
     public static final String KEY_TABLES_DIVIDER_LOCATION_1 = "tablePanelDividerLocation1";
     public static final String KEY_TABLES_DIVIDER_LOCATION_2 = "tablePanelDividerLocation2";
     public static final String KEY_TABLES_DIVIDER_LOCATION_3 = "tablePanelDividerLocation3";
+
+    // Positions of deck editor divider bars
+    public static final String KEY_EDITOR_HORIZONTAL_DIVIDER_LOCATION = "editorHorizontalDividerLocation";
+    public static final String KEY_EDITOR_DECKAREA_SETTINGS = "editorDeckAreaSettings";
 
     // user list
     public static final String KEY_USERS_COLUMNS_WIDTH = "userPanelColumnWidth";
@@ -284,6 +298,17 @@ public class PreferencesDialog extends javax.swing.JDialog {
     public static final String KEY_PROXY_PSWD = "proxyPassword";
     public static final String KEY_CONNECTION_URL_SERVER_LIST = "connectionURLServerList";
 
+    // controls
+    public static final String KEY_CONTROL_CONFIRM = "controlConfirm";
+    public static final String KEY_CONTROL_CANCEL_SKIP = "controlCancelSkip";
+    public static final String KEY_CONTROL_NEXT_TURN = "controlNextTurn";
+    public static final String KEY_CONTROL_END_STEP = "controlEndStep";
+    public static final String KEY_CONTROL_SKIP_STEP = "controlSkipTurn";
+    public static final String KEY_CONTROL_MAIN_STEP = "controlMainStep";
+    public static final String KEY_CONTROL_YOUR_TURN = "controlYourTurn";
+    public static final String KEY_CONTROL_SKIP_STACK = "controlSkipStack";
+    public static final String KEY_CONTROL_PRIOR_END = "controlPriorEnd";
+
     public static final String KEY_AVATAR = "selectedId";
 
     public static final String KEY_CONNECT_AUTO_CONNECT = "autoConnect";
@@ -296,8 +321,8 @@ public class PreferencesDialog extends javax.swing.JDialog {
     public static final String OPEN_CONNECTION_TAB = "Open-Connection-Tab";
     public static final String OPEN_PHASES_TAB = "Open-Phases-Tab";
 
-    public static String PHASE_ON = "on";
-    public static String PHASE_OFF = "off";
+    public static final String PHASE_ON = "on";
+    public static final String PHASE_OFF = "off";
 
     private static final Map<Integer, JPanel> PANELS = new HashMap<>();
 
@@ -530,6 +555,27 @@ public class PreferencesDialog extends javax.swing.JDialog {
         txtPasswordField = new javax.swing.JPasswordField();
         rememberPswd = new javax.swing.JCheckBox();
         jLabel11 = new javax.swing.JLabel();
+        tabControls = new javax.swing.JPanel();
+        labelNextTurn = new javax.swing.JLabel();
+        labelEndStep = new javax.swing.JLabel();
+        labelMainStep = new javax.swing.JLabel();
+        labelYourTurn = new javax.swing.JLabel();
+        lebelSkip = new javax.swing.JLabel();
+        labelPriorEnd = new javax.swing.JLabel();
+        labelCancel = new javax.swing.JLabel();
+        keyCancelSkip = new KeyBindButton(this, KEY_CONTROL_CANCEL_SKIP);
+        keyNextTurn = new KeyBindButton(this, KEY_CONTROL_NEXT_TURN);
+        keyMainStep = new KeyBindButton(this, KEY_CONTROL_MAIN_STEP);
+        keyEndStep = new KeyBindButton(this, KEY_CONTROL_END_STEP);
+        keyYourTurn = new KeyBindButton(this, KEY_CONTROL_YOUR_TURN);
+        keySkipStack = new KeyBindButton(this, KEY_CONTROL_SKIP_STACK);
+        keyPriorEnd = new KeyBindButton(this, KEY_CONTROL_PRIOR_END);
+        keySkipStep = new KeyBindButton(this, KEY_CONTROL_SKIP_STEP);
+        labelSkipStep = new javax.swing.JLabel();
+        keyConfirm = new KeyBindButton(this, KEY_CONTROL_CONFIRM);
+        labelConfirm = new javax.swing.JLabel();
+        controlsDescriptionLabel = new javax.swing.JLabel();
+        bttnResetControls = new javax.swing.JButton();
         saveButton = new javax.swing.JButton();
         exitButton = new javax.swing.JButton();
 
@@ -545,11 +591,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
         showCardName.setToolTipText("Write the card's name on the card to make the card name more recognizable.");
         showCardName.setActionCommand("");
         showCardName.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
-        showCardName.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                showCardNameActionPerformed(evt);
-            }
-        });
+        showCardName.addActionListener(evt -> showCardNameActionPerformed(evt));
 
         tooltipDelayLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         tooltipDelayLabel.setText("Delay in milliseconds for showing the card tooltip text");
@@ -591,71 +633,43 @@ public class PreferencesDialog extends javax.swing.JDialog {
         nonLandPermanentsInOnePile.setSelected(true);
         nonLandPermanentsInOnePile.setText("Put non-land permanents in same row as creatures");
         nonLandPermanentsInOnePile.setToolTipText("<html>If activated, all non land permanents are shown in one row.<br>\nFirst creatures than other permanents. If not activated, creatures are<br>\nshown in a separate row.");
-        nonLandPermanentsInOnePile.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                nonLandPermanentsInOnePileActionPerformed(evt);
-            }
-        });
+        nonLandPermanentsInOnePile.addActionListener(evt -> nonLandPermanentsInOnePileActionPerformed(evt));
 
         showPlayerNamesPermanently.setSelected(true);
         showPlayerNamesPermanently.setText("Show player names on avatar permanently");
         showPlayerNamesPermanently.setToolTipText("Instead showing the names only if you hover over the avatar with the mouse, the name is shown all the time.");
         showPlayerNamesPermanently.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        showPlayerNamesPermanently.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                showPlayerNamesPermanentlyActionPerformed(evt);
-            }
-        });
+        showPlayerNamesPermanently.addActionListener(evt -> showPlayerNamesPermanentlyActionPerformed(evt));
 
         showAbilityPickerForced.setSelected(true);
         showAbilityPickerForced.setText("Show ability picker for abilities or spells without costs");
         showAbilityPickerForced.setToolTipText("This prevents you from accidently activating abilities without other costs than tapping or casting spells with 0 mana costs.");
         showAbilityPickerForced.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        showAbilityPickerForced.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                showAbilityPickerForcedActionPerformed(evt);
-            }
-        });
+        showAbilityPickerForced.addActionListener(evt -> showAbilityPickerForcedActionPerformed(evt));
 
         cbAllowRequestToShowHandCards.setSelected(true);
         cbAllowRequestToShowHandCards.setText("Allow requests from players and spectators to show your hand cards");
         cbAllowRequestToShowHandCards.setToolTipText("<html>This is the default setting used for your matches. If activated other players or spectators<br>\nof your match can send a request so you can allow them to see your hand cards.");
         cbAllowRequestToShowHandCards.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        cbAllowRequestToShowHandCards.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbAllowRequestToShowHandCardsActionPerformed(evt);
-            }
-        });
+        cbAllowRequestToShowHandCards.addActionListener(evt -> cbAllowRequestToShowHandCardsActionPerformed(evt));
 
         cbShowStormCounter.setSelected(true);
         cbShowStormCounter.setText("Show the number of spell casts during the current turn");
         cbShowStormCounter.setToolTipText("<html>Adds a little box left to the short keys line with the number<br>\nof spells already cast during the current turn (storm counter).");
         cbShowStormCounter.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        cbShowStormCounter.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbShowStormCounterActionPerformed(evt);
-            }
-        });
+        cbShowStormCounter.addActionListener(evt -> cbShowStormCounterActionPerformed(evt));
 
         cbConfirmEmptyManaPool.setSelected(true);
         cbConfirmEmptyManaPool.setText("Confirm if you want to pass a phase/step but there is still mana in your mana pool");
         cbConfirmEmptyManaPool.setToolTipText("<html>If activated you get a confirm message if you pass priority while stack is empty<br>\n and you still have mana in your mana pool.");
         cbConfirmEmptyManaPool.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        cbConfirmEmptyManaPool.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbConfirmEmptyManaPoolActionPerformed(evt);
-            }
-        });
+        cbConfirmEmptyManaPool.addActionListener(evt -> cbConfirmEmptyManaPoolActionPerformed(evt));
 
         cbAskMoveToGraveOrder.setSelected(true);
         cbAskMoveToGraveOrder.setText("Ask player for setting order cards go to graveyard");
         cbAskMoveToGraveOrder.setToolTipText("<html>If activated and multiple cards go to the graveyard at the same time<br>\nthe player is asked to set the order of the cards.");
         cbAskMoveToGraveOrder.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        cbAskMoveToGraveOrder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbAskMoveToGraveOrderActionPerformed(evt);
-            }
-        });
+        cbAskMoveToGraveOrder.addActionListener(evt -> cbAskMoveToGraveOrderActionPerformed(evt));
 
         org.jdesktop.layout.GroupLayout main_gameLayout = new org.jdesktop.layout.GroupLayout(main_game);
         main_game.setLayout(main_gameLayout);
@@ -699,20 +713,12 @@ public class PreferencesDialog extends javax.swing.JDialog {
         cbGameLogAutoSave.setSelected(true);
         cbGameLogAutoSave.setText("Auto save game logs     (to \"../Mage.Client/gamelogs/\" directory)");
         cbGameLogAutoSave.setToolTipText("The logs of all your games will be saved to the mentioned folder if this option is switched on.");
-        cbGameLogAutoSave.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbGameLogAutoSaveActionPerformed(evt);
-            }
-        });
+        cbGameLogAutoSave.addActionListener(evt -> cbGameLogAutoSaveActionPerformed(evt));
 
         cbDraftLogAutoSave.setSelected(true);
         cbDraftLogAutoSave.setText("Auto save draft logs     (to \"../Mage.Client/gamelogs/\" directory)");
         cbDraftLogAutoSave.setToolTipText("The logs of all your games will be saved to the mentioned folder if this option is switched on.");
-        cbDraftLogAutoSave.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbDraftLogAutoSaveActionPerformed(evt);
-            }
-        });
+        cbDraftLogAutoSave.addActionListener(evt -> cbDraftLogAutoSaveActionPerformed(evt));
 
         org.jdesktop.layout.GroupLayout main_gamelogLayout = new org.jdesktop.layout.GroupLayout(main_gamelog);
         main_gamelog.setLayout(main_gamelogLayout);
@@ -1213,75 +1219,47 @@ public class PreferencesDialog extends javax.swing.JDialog {
         cbStopAttack.setText("Stop on declare attackers step if you skip steps (F4/F5/F7) and attackers are available");
         cbStopAttack.setToolTipText("If you use F4, F5 or F7 to skip steps, you stop on declare attackers step if attackers are available. If this option is not activated, you also skip the declare attackers step with this actions. F9 does always skip the declare attackers step.");
         cbStopAttack.setActionCommand("");
-        cbStopAttack.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbStopAttackActionPerformed(evt);
-            }
-        });
+        cbStopAttack.addActionListener(evt -> cbStopAttackActionPerformed(evt));
         phases_stopSettings.add(cbStopAttack);
 
         cbStopBlock.setText("Stop on your declare blockers step also if no blockers available");
         cbStopBlock.setToolTipText("Also if you have no blockers to declare, the game stops at the declare blockers step.");
         cbStopBlock.setActionCommand("");
-        cbStopBlock.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbStopBlockActionPerformed(evt);
-            }
-        });
+        cbStopBlock.addActionListener(evt -> cbStopBlockActionPerformed(evt));
         phases_stopSettings.add(cbStopBlock);
 
         cbStopOnAllMain.setText("Skip with F7 to next main phase (if not activated skip always to your next main phase)");
         cbStopOnAllMain.setToolTipText("If activated F7 skips to next main phases (regardless of the active players).");
         cbStopOnAllMain.setActionCommand("");
-        cbStopOnAllMain.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbStopOnAllMainActionPerformed(evt);
-            }
-        });
+        cbStopOnAllMain.addActionListener(evt -> cbStopOnAllMainActionPerformed(evt));
         phases_stopSettings.add(cbStopOnAllMain);
 
         cbStopOnAllEnd.setText("Skip with F5 to next end step (if not activated only to end steps of opponents)");
         cbStopOnAllEnd.setToolTipText("If activated - F5 skips to the next end step (regardless of the current player)");
         cbStopOnAllEnd.setActionCommand("");
         cbStopOnAllEnd.setPreferredSize(new java.awt.Dimension(300, 25));
-        cbStopOnAllEnd.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbStopOnAllEndActionPerformed(evt);
-            }
-        });
+        cbStopOnAllEnd.addActionListener(evt -> cbStopOnAllEndActionPerformed(evt));
         phases_stopSettings.add(cbStopOnAllEnd);
 
         cbPassPriorityCast.setText("Pass priority automatically after you have put a spell on the stack");
         cbPassPriorityCast.setToolTipText("If activated the system passes priority automatically for you if you have put a spell on the stack.");
         cbPassPriorityCast.setActionCommand("");
         cbPassPriorityCast.setPreferredSize(new java.awt.Dimension(300, 25));
-        cbPassPriorityCast.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbPassPriorityCastActionPerformed(evt);
-            }
-        });
+        cbPassPriorityCast.addActionListener(evt -> cbPassPriorityCastActionPerformed(evt));
         phases_stopSettings.add(cbPassPriorityCast);
 
         cbPassPriorityActivation.setText("Pass priority automatically after you have put an activated ability on the stack");
         cbPassPriorityActivation.setToolTipText("If activated the system passes priority for you automatically after you have put an activated ability on the stack.");
         cbPassPriorityActivation.setActionCommand("");
         cbPassPriorityActivation.setPreferredSize(new java.awt.Dimension(300, 25));
-        cbPassPriorityActivation.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbPassPriorityActivationActionPerformed(evt);
-            }
-        });
+        cbPassPriorityActivation.addActionListener(evt -> cbPassPriorityActivationActionPerformed(evt));
         phases_stopSettings.add(cbPassPriorityActivation);
 
         cbAutoOrderTrigger.setText("Set order for your triggers automatically if all have the same text");
         cbAutoOrderTrigger.setToolTipText("<HTML>If activated the order to put on the stack your triggers that trigger at the same time<br/>\nis set automatically if all have the same text.");
         cbAutoOrderTrigger.setActionCommand("");
         cbAutoOrderTrigger.setPreferredSize(new java.awt.Dimension(300, 25));
-        cbAutoOrderTrigger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbAutoOrderTriggerActionPerformed(evt);
-            }
-        });
+        cbAutoOrderTrigger.addActionListener(evt -> cbAutoOrderTriggerActionPerformed(evt));
         phases_stopSettings.add(cbAutoOrderTrigger);
 
         org.jdesktop.layout.GroupLayout tabPhasesLayout = new org.jdesktop.layout.GroupLayout(tabPhases);
@@ -1394,8 +1372,8 @@ public class PreferencesDialog extends javax.swing.JDialog {
                     .add(jLabelEndOfTurn)
                     .add(checkBoxEndTurnOthers))
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
-                .add(phases_stopSettings, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 266, Short.MAX_VALUE)
-                .addContainerGap())
+                .add(phases_stopSettings, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(170, Short.MAX_VALUE))
         );
 
         tabsPanel.addTab("Phases & Priority", tabPhases);
@@ -1403,34 +1381,18 @@ public class PreferencesDialog extends javax.swing.JDialog {
         panelCardImages.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createEtchedBorder(), "Card images:"));
 
         cbUseDefaultImageFolder.setText("Use default location to save images");
-        cbUseDefaultImageFolder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbUseDefaultImageFolderActionPerformed(evt);
-            }
-        });
+        cbUseDefaultImageFolder.addActionListener(evt -> cbUseDefaultImageFolderActionPerformed(evt));
 
         txtImageFolderPath.setToolTipText("The selected image will be used as background picture. You have to restart MAGE to view a changed background image.");
 
         btnBrowseImageLocation.setText("Browse...");
-        btnBrowseImageLocation.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnBrowseImageLocationActionPerformed(evt);
-            }
-        });
+        btnBrowseImageLocation.addActionListener(evt -> btnBrowseImageLocationActionPerformed(evt));
 
         cbCheckForNewImages.setText("Check for new images on startup");
-        cbCheckForNewImages.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbCheckForNewImagesActionPerformed(evt);
-            }
-        });
+        cbCheckForNewImages.addActionListener(evt -> cbCheckForNewImagesActionPerformed(evt));
 
         cbSaveToZipFiles.setText("Store images in zip files");
-        cbSaveToZipFiles.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbSaveToZipFilesActionPerformed(evt);
-            }
-        });
+        cbSaveToZipFiles.addActionListener(evt -> cbSaveToZipFilesActionPerformed(evt));
 
         cbPreferedImageLanguage.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
@@ -1473,7 +1435,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
                                         .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                         .add(cbNumberOfDownloadThreads, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 153, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))))
                             .add(cbUseDefaultImageFolder))
-                        .add(0, 231, Short.MAX_VALUE)))
+                        .add(0, 270, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         panelCardImagesLayout.setVerticalGroup(
@@ -1501,51 +1463,23 @@ public class PreferencesDialog extends javax.swing.JDialog {
         panelBackgroundImages.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createEtchedBorder(), "Background images setting:"));
 
         cbUseDefaultBackground.setText("Use default image");
-        cbUseDefaultBackground.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbUseDefaultBackgroundActionPerformed(evt);
-            }
-        });
+        cbUseDefaultBackground.addActionListener(evt -> cbUseDefaultBackgroundActionPerformed(evt));
 
-        txtBackgroundImagePath.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtBackgroundImagePathActionPerformed(evt);
-            }
-        });
+        txtBackgroundImagePath.addActionListener(evt -> txtBackgroundImagePathActionPerformed(evt));
 
         btnBrowseBackgroundImage.setText("Browse...");
-        btnBrowseBackgroundImage.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnBrowseBackgroundImageActionPerformed(evt);
-            }
-        });
+        btnBrowseBackgroundImage.addActionListener(evt -> btnBrowseBackgroundImageActionPerformed(evt));
 
-        txtBattlefieldImagePath.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtBattlefieldImagePathActionPerformed(evt);
-            }
-        });
+        txtBattlefieldImagePath.addActionListener(evt -> txtBattlefieldImagePathActionPerformed(evt));
 
         btnBrowseBattlefieldImage.setText("Browse...");
-        btnBrowseBattlefieldImage.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnBrowseBattlefieldImageActionPerformed(evt);
-            }
-        });
+        btnBrowseBattlefieldImage.addActionListener(evt -> btnBrowseBattlefieldImageActionPerformed(evt));
 
         cbUseDefaultBattleImage.setText("Use default battlefield image");
-        cbUseDefaultBattleImage.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbUseDefaultBattleImageActionPerformed(evt);
-            }
-        });
+        cbUseDefaultBattleImage.addActionListener(evt -> cbUseDefaultBattleImageActionPerformed(evt));
 
         cbUseRandomBattleImage.setText("Select random battlefield image");
-        cbUseRandomBattleImage.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbUseRandomBattleImageActionPerformed(evt);
-            }
-        });
+        cbUseRandomBattleImage.addActionListener(evt -> cbUseRandomBattleImageActionPerformed(evt));
 
         jLabel14.setText("Background:");
 
@@ -1605,25 +1539,13 @@ public class PreferencesDialog extends javax.swing.JDialog {
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createEtchedBorder(), "Card rendering:"));
 
         cbCardRenderImageFallback.setText("Fall back to plain image based rendering");
-        cbCardRenderImageFallback.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbCardRenderImageFallbackActionPerformed(evt);
-            }
-        });
+        cbCardRenderImageFallback.addActionListener(evt -> cbCardRenderImageFallbackActionPerformed(evt));
 
         cbCardRenderShowReminderText.setText("Show reminder text in rendered card textboxes");
-        cbCardRenderShowReminderText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbCardRenderShowReminderTextActionPerformed(evt);
-            }
-        });
+        cbCardRenderShowReminderText.addActionListener(evt -> cbCardRenderShowReminderTextActionPerformed(evt));
 
         cbCardRenderHideSetSymbol.setText("Hide set symbols on cards (more space on the type line for card types)");
-        cbCardRenderHideSetSymbol.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbCardRenderHideSetSymbolActionPerformed(evt);
-            }
-        });
+        cbCardRenderHideSetSymbol.addActionListener(evt -> cbCardRenderHideSetSymbolActionPerformed(evt));
 
         org.jdesktop.layout.GroupLayout jPanel1Layout = new org.jdesktop.layout.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -1668,7 +1590,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
                 .add(panelCardImages, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                 .add(panelBackgroundImages, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(53, Short.MAX_VALUE))
+                .addContainerGap(125, Short.MAX_VALUE))
         );
 
         tabsPanel.addTab("Images", tabImages);
@@ -1678,38 +1600,22 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         cbEnableGameSounds.setText("Enable game sounds");
         cbEnableGameSounds.setToolTipText("Sounds that will be played for certain actions (e.g. play land, attack, etc.) during the game.");
-        cbEnableGameSounds.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbEnableGameSoundsActionPerformed(evt);
-            }
-        });
+        cbEnableGameSounds.addActionListener(evt -> cbEnableGameSoundsActionPerformed(evt));
         sounds_clips.add(cbEnableGameSounds);
 
         cbEnableDraftSounds.setText("Enable draft sounds");
         cbEnableDraftSounds.setToolTipText("Sounds that will be played during drafting for card picking or warining if time runs out.");
-        cbEnableDraftSounds.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbEnableDraftSoundsActionPerformed(evt);
-            }
-        });
+        cbEnableDraftSounds.addActionListener(evt -> cbEnableDraftSoundsActionPerformed(evt));
         sounds_clips.add(cbEnableDraftSounds);
 
         cbEnableSkipButtonsSounds.setText("Enable skip button sounds");
         cbEnableSkipButtonsSounds.setToolTipText("Sounds that will be played if a priority skip action (F4/F5/F7/F9) or cancel skip action (F3) is used.");
-        cbEnableSkipButtonsSounds.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbEnableSkipButtonsSoundsActionPerformed(evt);
-            }
-        });
+        cbEnableSkipButtonsSounds.addActionListener(evt -> cbEnableSkipButtonsSoundsActionPerformed(evt));
         sounds_clips.add(cbEnableSkipButtonsSounds);
 
         cbEnableOtherSounds.setText("Enable other sounds");
         cbEnableOtherSounds.setToolTipText("Sounds that will be played for actions outside of games (e.g. whisper, player joins your game, player submits a deck ...).");
-        cbEnableOtherSounds.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbEnableOtherSoundsActionPerformed(evt);
-            }
-        });
+        cbEnableOtherSounds.addActionListener(evt -> cbEnableOtherSoundsActionPerformed(evt));
         sounds_clips.add(cbEnableOtherSounds);
 
         sounds_backgroundMusic.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createEtchedBorder(), "Music"));
@@ -1717,27 +1623,15 @@ public class PreferencesDialog extends javax.swing.JDialog {
         cbEnableBattlefieldBGM.setText("Play music during match");
         cbEnableBattlefieldBGM.setToolTipText("During your matches music will be played from the seleced folder.");
         cbEnableBattlefieldBGM.setActionCommand("Play automatically during matches");
-        cbEnableBattlefieldBGM.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbEnableBattlefieldBGMActionPerformed(evt);
-            }
-        });
+        cbEnableBattlefieldBGM.addActionListener(evt -> cbEnableBattlefieldBGMActionPerformed(evt));
 
         jLabel16.setText("Playing from folder:");
         jLabel16.setToolTipText("");
 
-        txtBattlefieldIBGMPath.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtBattlefieldIBGMPathActionPerformed(evt);
-            }
-        });
+        txtBattlefieldIBGMPath.addActionListener(evt -> txtBattlefieldIBGMPathActionPerformed(evt));
 
         btnBattlefieldBGMBrowse.setText("Browse...");
-        btnBattlefieldBGMBrowse.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnBattlefieldBGMBrowseActionPerformed(evt);
-            }
-        });
+        btnBattlefieldBGMBrowse.addActionListener(evt -> btnBattlefieldBGMBrowseActionPerformed(evt));
 
         org.jdesktop.layout.GroupLayout sounds_backgroundMusicLayout = new org.jdesktop.layout.GroupLayout(sounds_backgroundMusic);
         sounds_backgroundMusic.setLayout(sounds_backgroundMusicLayout);
@@ -2243,7 +2137,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
         tabAvatarsLayout.setVerticalGroup(
             tabAvatarsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
             .add(tabAvatarsLayout.createSequentialGroup()
-                .add(avatarPane, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 484, Short.MAX_VALUE)
+                .add(avatarPane, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 584, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -2278,7 +2172,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
                     .add(connection_serversLayout.createSequentialGroup()
                         .add(141, 141, 141)
                         .add(jLabel17)))
-                .addContainerGap(91, Short.MAX_VALUE))
+                .addContainerGap(198, Short.MAX_VALUE))
         );
         connection_serversLayout.setVerticalGroup(
             connection_serversLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
@@ -2292,11 +2186,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         lblProxyType.setText("Proxy:");
 
-        cbProxyType.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbProxyTypeActionPerformed(evt);
-            }
-        });
+        cbProxyType.addActionListener(evt -> cbProxyTypeActionPerformed(evt));
 
         pnlProxySettings.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
@@ -2314,18 +2204,10 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         lblProxyPassword.setText("Password:");
 
-        txtPasswordField.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtPasswordFieldActionPerformed(evt);
-            }
-        });
+        txtPasswordField.addActionListener(evt -> txtPasswordFieldActionPerformed(evt));
 
         rememberPswd.setText("Remember Password");
-        rememberPswd.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rememberPswdActionPerformed(evt);
-            }
-        });
+        rememberPswd.addActionListener(evt -> rememberPswdActionPerformed(evt));
 
         jLabel11.setFont(new java.awt.Font("Tahoma", 2, 10)); // NOI18N
         jLabel11.setText("Note: password won't be encrypted!");
@@ -2432,27 +2314,146 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         tabsPanel.addTab("Connection", tabConnection);
 
-        saveButton.setLabel("Save");
+        labelNextTurn.setText("Next Turn");
+
+        labelEndStep.setText("End Step");
+
+        labelMainStep.setText("Main Step");
+
+        labelYourTurn.setText("Your Turn");
+
+        lebelSkip.setText("Skip Stack");
+
+        labelPriorEnd.setText("Prior End");
+
+        labelCancel.setText("Cancel Skip");
+
+        keyCancelSkip.setText("keyBindButton1");
+
+        keyNextTurn.setText("keyBindButton1");
+
+        keyMainStep.setText("keyBindButton1");
+
+        keyEndStep.setText("keyBindButton1");
+
+        keyYourTurn.setText("keyBindButton1");
+
+        keySkipStack.setText("keyBindButton1");
+
+        keyPriorEnd.setText("keyBindButton1");
+
+        keySkipStep.setText("keyBindButton1");
+
+        labelSkipStep.setText("Skip Step");
+
+        keyConfirm.setText("keyBindButton1");
+
+        labelConfirm.setText("Confirm");
+
+        controlsDescriptionLabel.setText("<html>Click on a button and press a key to change a keybind.<br>Space and ESC are not available, and will set the keybind to nothing.<br>If you are currently playing a game, the changes will not take effect until you start a new game.");
+        controlsDescriptionLabel.setVerticalAlignment(javax.swing.SwingConstants.TOP);
+
+        bttnResetControls.setText("Reset to default");
+        bttnResetControls.addActionListener(evt -> bttnResetControlsActionPerformed(evt));
+
+        org.jdesktop.layout.GroupLayout tabControlsLayout = new org.jdesktop.layout.GroupLayout(tabControls);
+        tabControls.setLayout(tabControlsLayout);
+        tabControlsLayout.setHorizontalGroup(
+            tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+            .add(tabControlsLayout.createSequentialGroup()
+                .addContainerGap()
+                .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                    .add(tabControlsLayout.createSequentialGroup()
+                        .add(bttnResetControls)
+                        .add(0, 0, Short.MAX_VALUE))
+                    .add(tabControlsLayout.createSequentialGroup()
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                            .add(labelCancel)
+                            .add(labelNextTurn)
+                            .add(labelEndStep)
+                            .add(labelMainStep)
+                            .add(labelYourTurn)
+                            .add(lebelSkip)
+                            .add(labelPriorEnd)
+                            .add(labelSkipStep)
+                            .add(labelConfirm))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                            .add(keyConfirm, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keyCancelSkip, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keyNextTurn, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keySkipStack, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keyYourTurn, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keyMainStep, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keyPriorEnd, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keySkipStep, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                            .add(keyEndStep, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
+                        .add(controlsDescriptionLabel, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        tabControlsLayout.setVerticalGroup(
+            tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+            .add(tabControlsLayout.createSequentialGroup()
+                .addContainerGap()
+                .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.TRAILING, false)
+                    .add(org.jdesktop.layout.GroupLayout.LEADING, controlsDescriptionLabel)
+                    .add(org.jdesktop.layout.GroupLayout.LEADING, tabControlsLayout.createSequentialGroup()
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelConfirm)
+                            .add(keyConfirm, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelCancel)
+                            .add(keyCancelSkip, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelNextTurn)
+                            .add(keyNextTurn, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelEndStep)
+                            .add(keyEndStep, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelSkipStep)
+                            .add(keySkipStep, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelMainStep)
+                            .add(keyMainStep, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelYourTurn)
+                            .add(keyYourTurn, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(lebelSkip)
+                            .add(keySkipStack, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                        .add(tabControlsLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
+                            .add(labelPriorEnd)
+                            .add(keyPriorEnd, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))))
+                .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
+                .add(bttnResetControls)
+                .addContainerGap())
+        );
+
+        tabsPanel.addTab("Controls", tabControls);
+
+        saveButton.setText("Save");
         saveButton.setMaximumSize(new java.awt.Dimension(100, 30));
         saveButton.setMinimumSize(new java.awt.Dimension(100, 30));
         saveButton.setPreferredSize(new java.awt.Dimension(100, 30));
         saveButton.setVerticalAlignment(javax.swing.SwingConstants.BOTTOM);
-        saveButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveButtonActionPerformed(evt);
-            }
-        });
+        saveButton.addActionListener(evt -> saveButtonActionPerformed(evt));
 
-        exitButton.setLabel("Exit");
+        exitButton.setText("Exit");
         exitButton.setMaximumSize(new java.awt.Dimension(100, 30));
         exitButton.setMinimumSize(new java.awt.Dimension(100, 30));
         exitButton.setPreferredSize(new java.awt.Dimension(100, 30));
         exitButton.setVerticalAlignment(javax.swing.SwingConstants.BOTTOM);
-        exitButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                exitButtonActionPerformed(evt);
-            }
-        });
+        exitButton.addActionListener(evt -> exitButtonActionPerformed(evt));
 
         org.jdesktop.layout.GroupLayout layout = new org.jdesktop.layout.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -2599,7 +2600,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
         save(prefs, dialog.cbCardRenderImageFallback, KEY_CARD_RENDERING_FALLBACK, "true", "false", UPDATE_CACHE_POLICY);
         save(prefs, dialog.cbCardRenderHideSetSymbol, KEY_CARD_RENDERING_SET_SYMBOL, "true", "false", UPDATE_CACHE_POLICY);
         save(prefs, dialog.cbCardRenderShowReminderText, KEY_CARD_RENDERING_REMINDER_TEXT, "true", "false", UPDATE_CACHE_POLICY);
-        
+
         // sounds
         save(prefs, dialog.cbEnableGameSounds, KEY_SOUNDS_GAME_ON, "true", "false", UPDATE_CACHE_POLICY);
         save(prefs, dialog.cbEnableDraftSounds, KEY_SOUNDS_DRAFT_ON, "true", "false", UPDATE_CACHE_POLICY);
@@ -2619,6 +2620,17 @@ public class PreferencesDialog extends javax.swing.JDialog {
             prefs.put(KEY_PROXY_PSWD, new String(input));
         }
         save(prefs, dialog.txtURLServerList, KEY_CONNECTION_URL_SERVER_LIST);
+
+        // controls
+        save(prefs, dialog.keyConfirm);
+        save(prefs, dialog.keyCancelSkip);
+        save(prefs, dialog.keyNextTurn);
+        save(prefs, dialog.keyEndStep);
+        save(prefs, dialog.keySkipStep);
+        save(prefs, dialog.keyMainStep);
+        save(prefs, dialog.keyYourTurn);
+        save(prefs, dialog.keySkipStack);
+        save(prefs, dialog.keyPriorEnd);
 
         // Avatar
         if (selectedAvatarId < MIN_AVATAR_ID || selectedAvatarId > MAX_AVATAR_ID) {
@@ -2909,6 +2921,14 @@ public class PreferencesDialog extends javax.swing.JDialog {
         // TODO add your handling code here:
     }//GEN-LAST:event_cbCardRenderHideSetSymbolActionPerformed
 
+    private void bttnResetControlsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bttnResetControlsActionPerformed
+        getKeybindButtons().forEach((bttn) -> {
+            String id = bttn.getKey();
+            int keyCode = getDefaultControlKey(id);
+            bttn.setKeyCode(keyCode);
+        });
+    }//GEN-LAST:event_bttnResetControlsActionPerformed
+
     private void showProxySettings() {
         Connection.ProxyType proxyType = (Connection.ProxyType) cbProxyType.getSelectedItem();
         switch (proxyType) {
@@ -2971,40 +2991,40 @@ public class PreferencesDialog extends javax.swing.JDialog {
             }
         }
         final int openedTab = param;
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                if (!dialog.isVisible()) {
-                    Preferences prefs = MageFrame.getPreferences();
+        java.awt.EventQueue.invokeLater(() -> {
+            if (!dialog.isVisible()) {
+                Preferences prefs = MageFrame.getPreferences();
 
-                    // Main & Phases
-                    loadPhases(prefs);
+                // Main & Phases
+                loadPhases(prefs);
 
-                    // Gui Size
-                    loadGuiSize(prefs);
+                // Gui Size
+                loadGuiSize(prefs);
 
-                    // Images
-                    loadImagesSettings(prefs);
+                // Images
+                loadImagesSettings(prefs);
 
-                    // Sounds
-                    loadSoundSettings(prefs);
+                // Sounds
+                loadSoundSettings(prefs);
 
-                    // Connection
-                    loadProxySettings(prefs);
+                // Connection
+                loadProxySettings(prefs);
 
-                    // Selected avatar
-                    loadSelectedAvatar(prefs);
+                // Controls
+                loadControlSettings(prefs);
 
-                    dialog.reset();
-                    // open specified tab before displaying
-                    openTab(openedTab);
+                // Selected avatar
+                loadSelectedAvatar(prefs);
 
-                    dialog.setLocation(300, 200);
+                dialog.reset();
+                // open specified tab before displaying
+                openTab(openedTab);
 
-                    dialog.setVisible(true);
-                } else {
-                    dialog.requestFocus();
-                }
+                dialog.setLocation(300, 200);
+
+                dialog.setVisible(true);
+            } else {
+                dialog.requestFocus();
             }
         });
     }
@@ -3086,7 +3106,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
         load(prefs, dialog.cbCardRenderImageFallback, KEY_CARD_RENDERING_FALLBACK, "true");
         load(prefs, dialog.cbCardRenderHideSetSymbol, KEY_CARD_RENDERING_SET_SYMBOL, "true");
         load(prefs, dialog.cbCardRenderShowReminderText, KEY_CARD_RENDERING_REMINDER_TEXT, "true");
-        
+
         //add background load precedure
         prop = prefs.get(KEY_BACKGROUND_IMAGE_DEFAULT, "true");
         if (prop.equals("true")) {
@@ -3151,6 +3171,18 @@ public class PreferencesDialog extends javax.swing.JDialog {
             load(prefs, dialog.txtPasswordField, KEY_PROXY_PSWD, "");
         }
         load(prefs, dialog.txtURLServerList, KEY_CONNECTION_URL_SERVER_LIST, "http://XMage.de/files/server-list.txt");
+    }
+
+    private static void loadControlSettings(Preferences prefs) {
+        load(prefs, dialog.keyConfirm);
+        load(prefs, dialog.keyCancelSkip);
+        load(prefs, dialog.keyNextTurn);
+        load(prefs, dialog.keyEndStep);
+        load(prefs, dialog.keySkipStep);
+        load(prefs, dialog.keyMainStep);
+        load(prefs, dialog.keyYourTurn);
+        load(prefs, dialog.keySkipStack);
+        load(prefs, dialog.keyPriorEnd);
     }
 
     private static void loadSelectedAvatar(Preferences prefs) {
@@ -3277,6 +3309,12 @@ public class PreferencesDialog extends javax.swing.JDialog {
         load(prefs, checkBox, propName, PHASE_ON);
     }
 
+    private static void load(Preferences prefs, KeyBindButton button) {
+        String key = button.getKey();
+        int prop = prefs.getInt(key, getDefaultControlKey(key));
+        button.setKeyCode(prop);
+    }
+
     private static void save(Preferences prefs, JCheckBox checkBox, String propName) {
         save(prefs, checkBox, propName, PHASE_ON, PHASE_OFF, false);
     }
@@ -3314,6 +3352,13 @@ public class PreferencesDialog extends javax.swing.JDialog {
         updateCache(propName, comboBox.getSelectedItem().toString().trim());
     }
 
+    private static void save(Preferences prefs, KeyBindButton button) {
+        int code = button.getKeyCode();
+        String key = button.getKey();
+        prefs.putInt(key, code);
+        updateCache(key, Integer.toString(code));
+    }
+
     public void reset() {
         tabsPanel.setSelectedIndex(0);
     }
@@ -3342,6 +3387,41 @@ public class PreferencesDialog extends javax.swing.JDialog {
             CACHE.put(key, value);
             return value;
         }
+    }
+
+    private static int getDefaultControlKey(String key) {
+        switch (key) {
+            case KEY_CONTROL_CONFIRM:
+                return KeyEvent.VK_F2;
+            case KEY_CONTROL_CANCEL_SKIP:
+                return KeyEvent.VK_F3;
+            case KEY_CONTROL_NEXT_TURN:
+                return KeyEvent.VK_F4;
+            case KEY_CONTROL_END_STEP:
+                return KeyEvent.VK_F5;
+            case KEY_CONTROL_SKIP_STEP:
+                return KeyEvent.VK_F6;
+            case KEY_CONTROL_MAIN_STEP:
+                return KeyEvent.VK_F7;
+            case KEY_CONTROL_YOUR_TURN:
+                return KeyEvent.VK_F9;
+            case KEY_CONTROL_SKIP_STACK:
+                return KeyEvent.VK_F10;
+            case KEY_CONTROL_PRIOR_END:
+                return KeyEvent.VK_F11;
+            default:
+                return 0;
+        }
+    }
+
+    public static KeyStroke getCachedKeystroke(String key) {
+        int code = getCachedValue(key, getDefaultControlKey(key));
+        return KeyStroke.getKeyStroke(code, 0);
+    }
+
+    public static String getCachedKeyText(String key) {
+        int code = getCachedValue(key, getDefaultControlKey(key));
+        return KeyEvent.getKeyText(code);
     }
 
     private static void updateCache(String key, String value) {
@@ -3440,6 +3520,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
         if (selectedAvatarId == 0) {
             getSelectedAvatar();
         }
+        String userStrId = System.getProperty("user.name");
         return new UserData(UserGroup.PLAYER,
                 PreferencesDialog.selectedAvatarId,
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_SHOW_ABILITY_PICKER_FORCED, "true").equals("true"),
@@ -3447,13 +3528,28 @@ public class PreferencesDialog extends javax.swing.JDialog {
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_GAME_CONFIRM_EMPTY_MANA_POOL, "true").equals("true"),
                 getUserSkipPrioritySteps(),
                 MageFrame.getPreferences().get(KEY_CONNECT_FLAG, "world"),
-                PreferencesDialog.getCachedValue(PreferencesDialog.KEY_GAME_ASK_MOVE_TO_GRAVE_ORDER, "true").equals("true"),
+                PreferencesDialog.getCachedValue(PreferencesDialog.KEY_GAME_ASK_MOVE_TO_GRAVE_ORDER, "false").equals("true"),
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_GAME_MANA_AUTOPAYMENT, "true").equals("true"),
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_GAME_MANA_AUTOPAYMENT_ONLY_ONE, "true").equals("true"),
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_PASS_PRIORITY_CAST, "true").equals("true"),
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_PASS_PRIORITY_ACTIVATION, "true").equals("true"),
                 PreferencesDialog.getCachedValue(PreferencesDialog.KEY_AUTO_ORDER_TRIGGER, "true").equals("true"),
-                PreferencesDialog.getCachedValue(PreferencesDialog.KEY_USE_FIRST_MANA_ABILITY, "false").equals("true")
+                PreferencesDialog.getCachedValue(PreferencesDialog.KEY_USE_FIRST_MANA_ABILITY, "false").equals("true"),
+                userStrId
+        );
+    }
+
+    public List<KeyBindButton> getKeybindButtons() {
+        return Arrays.asList(
+                keyCancelSkip,
+                keyConfirm,
+                keyEndStep,
+                keyMainStep,
+                keyNextTurn,
+                keyPriorEnd,
+                keySkipStack,
+                keySkipStep,
+                keyYourTurn
         );
     }
 
@@ -3464,6 +3560,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     private javax.swing.JButton btnBrowseBackgroundImage;
     private javax.swing.JButton btnBrowseBattlefieldImage;
     private javax.swing.JButton btnBrowseImageLocation;
+    private javax.swing.JButton bttnResetControls;
     private javax.swing.JCheckBox cbAllowRequestToShowHandCards;
     private javax.swing.JCheckBox cbAskMoveToGraveOrder;
     private javax.swing.JCheckBox cbAutoOrderTrigger;
@@ -3510,6 +3607,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     private javax.swing.JCheckBox checkBoxUpkeepOthers;
     private javax.swing.JCheckBox checkBoxUpkeepYou;
     private javax.swing.JPanel connection_servers;
+    private javax.swing.JLabel controlsDescriptionLabel;
     private javax.swing.JButton exitButton;
     private javax.swing.JLabel fontSizeLabel;
     private javax.swing.JPanel guiSizeBasic;
@@ -3554,25 +3652,43 @@ public class PreferencesDialog extends javax.swing.JDialog {
     private javax.swing.JPanel jPanel31;
     private javax.swing.JPanel jPanel32;
     private javax.swing.JPanel jPanel33;
+    private mage.client.components.KeyBindButton keyCancelSkip;
+    private mage.client.components.KeyBindButton keyConfirm;
+    private mage.client.components.KeyBindButton keyEndStep;
+    private mage.client.components.KeyBindButton keyMainStep;
+    private mage.client.components.KeyBindButton keyNextTurn;
+    private mage.client.components.KeyBindButton keyPriorEnd;
+    private mage.client.components.KeyBindButton keySkipStack;
+    private mage.client.components.KeyBindButton keySkipStep;
+    private mage.client.components.KeyBindButton keyYourTurn;
+    private javax.swing.JLabel labelCancel;
     private javax.swing.JLabel labelCardSizeHand;
     private javax.swing.JLabel labelCardSizeMaxBattlefield;
     private javax.swing.JLabel labelCardSizeMinBattlefield;
     private javax.swing.JLabel labelCardSizeOtherZones;
+    private javax.swing.JLabel labelConfirm;
     private javax.swing.JLabel labelDialogFont;
     private javax.swing.JLabel labelEditorCardOffset;
     private javax.swing.JLabel labelEditorCardSize;
+    private javax.swing.JLabel labelEndStep;
     private javax.swing.JLabel labelEnlargedImageSize;
     private javax.swing.JLabel labelGameFeedback;
+    private javax.swing.JLabel labelMainStep;
+    private javax.swing.JLabel labelNextTurn;
     private javax.swing.JLabel labelNumberOfDownloadThreads;
     private javax.swing.JLabel labelPreferedImageLanguage;
+    private javax.swing.JLabel labelPriorEnd;
+    private javax.swing.JLabel labelSkipStep;
     private javax.swing.JLabel labelStackWidth;
     private javax.swing.JLabel labelTooltipSize;
+    private javax.swing.JLabel labelYourTurn;
     private javax.swing.JLabel lblProxyPassword;
     private javax.swing.JLabel lblProxyPort;
     private javax.swing.JLabel lblProxyServer;
     private javax.swing.JLabel lblProxyType;
     private javax.swing.JLabel lblProxyUserName;
     private javax.swing.JLabel lblURLServerList;
+    private javax.swing.JLabel lebelSkip;
     private javax.swing.JPanel main_card;
     private javax.swing.JPanel main_game;
     private javax.swing.JPanel main_gamelog;
@@ -3604,6 +3720,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     private javax.swing.JPanel sounds_clips;
     private javax.swing.JPanel tabAvatars;
     private javax.swing.JPanel tabConnection;
+    private javax.swing.JPanel tabControls;
     private javax.swing.JPanel tabGuiSize;
     private javax.swing.JPanel tabImages;
     private javax.swing.JPanel tabMain;

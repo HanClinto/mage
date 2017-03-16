@@ -118,26 +118,39 @@ public class BoostEnchantedEffect extends ContinuousEffectImpl {
         sb.append("Enchanted creature gets ");
         String p = power.toString();
         if (!p.startsWith("-")) {
-            sb.append("+");
+            sb.append('+');
         }
-        sb.append(p).append("/");
+        sb.append(p).append('/');
         String t = toughness.toString();
         if (!t.startsWith("-")) {
             if (p.startsWith("-")) {
-                sb.append("-");
+                sb.append('-');
             } else {
-                sb.append("+");
+                sb.append('+');
             }
         }
         sb.append(t);
         if (duration != Duration.WhileOnBattlefield) {
-            sb.append(" ").append(duration.toString());
+            sb.append(' ').append(duration.toString());
         }
-        String message = power.getMessage();
-        if (message.length() > 0) {
-            sb.append(" for each ");
+        String message = null;
+        String fixedPart = null;
+        if (t.contains("X")) {
+            message = toughness.getMessage();
+            fixedPart = ", where X is ";
+        } else if (p.contains("X")) {
+            message = power.getMessage();
+            fixedPart = ", where X is ";
+        } else if (!power.getMessage().isEmpty()) {
+            message = power.getMessage();
+            fixedPart = " for each ";
+        } else if (!toughness.getMessage().isEmpty()) {
+            message = toughness.getMessage();
+            fixedPart = " for each ";
         }
-        sb.append(message);
+        if (message != null && !message.isEmpty() && fixedPart != null) {
+            sb.append(fixedPart).append(message);
+        }
         staticText = sb.toString();
     }
 

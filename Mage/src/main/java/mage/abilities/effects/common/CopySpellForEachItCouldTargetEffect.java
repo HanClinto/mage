@@ -27,14 +27,6 @@
  */
 package mage.abilities.effects.common;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import mage.MageItem;
 import mage.MageObject;
 import mage.abilities.Ability;
@@ -50,6 +42,8 @@ import mage.players.Player;
 import mage.target.Target;
 import mage.target.TargetImpl;
 import mage.util.TargetAddress;
+
+import java.util.*;
 
 /**
  * @author duncant
@@ -158,7 +152,7 @@ public abstract class CopySpellForEachItCouldTargetEffect<T extends MageItem> ex
                             targetInstance.add(objId, game);
                         }
                         if (!playerTargetCopyMap.containsKey(copy.getControllerId())) {
-                            playerTargetCopyMap.put(copy.getControllerId(), new HashMap<UUID, Spell>());
+                            playerTargetCopyMap.put(copy.getControllerId(), new HashMap<>());
                         }
                         playerTargetCopyMap.get(copy.getControllerId()).put(objId, copy);
                     }
@@ -170,7 +164,7 @@ public abstract class CopySpellForEachItCouldTargetEffect<T extends MageItem> ex
                 if (playerTargetCopyMap.containsKey(player.getId())) {
                     Map<UUID, Spell> targetCopyMap = playerTargetCopyMap.get(player.getId());
                     if (targetCopyMap != null) {
-                        while (targetCopyMap.size() > 0) {
+                        while (!targetCopyMap.isEmpty()) {
                             FilterInPlay<T> setFilter = filter.copy();
                             setFilter.add(new FromSetPredicate(targetCopyMap.keySet()));
                             Target target = new TargetWithAdditionalFilter(sampleTarget, setFilter);
@@ -261,9 +255,6 @@ class TargetWithAdditionalFilter<T extends MageItem> extends TargetImpl {
 
     protected final FilterInPlay<T> additionalFilter;
     protected final Target originalTarget;
-    protected static final Integer minNumberOfTargets = null;
-    protected static final Integer maxNumberOfTargets = null;
-    protected static final Zone zone = null;
 
     public TargetWithAdditionalFilter(final TargetWithAdditionalFilter target) {
         this(target.originalTarget, target.additionalFilter, false);
@@ -274,12 +265,16 @@ class TargetWithAdditionalFilter<T extends MageItem> extends TargetImpl {
     }
 
     public TargetWithAdditionalFilter(Target originalTarget, FilterInPlay<T> additionalFilter, boolean notTarget) {
-        originalTarget = originalTarget.copy();
-        originalTarget.clearChosen();
-        this.originalTarget = originalTarget;
+        this.originalTarget = originalTarget.copy();
+        this.originalTarget.clearChosen();
         this.targetName = originalTarget.getFilter().getMessage();
         this.notTarget = notTarget;
         this.additionalFilter = additionalFilter;
+    }
+
+    @Override
+    public Target getOriginalTarget() {
+        return originalTarget;
     }
 
     @Override
@@ -465,11 +460,11 @@ class TargetWithAdditionalFilter<T extends MageItem> extends TargetImpl {
         for (UUID targetId : getTargets()) {
             MageObject object = game.getObject(targetId);
             if (object != null) {
-                sb.append(object.getLogName()).append(" ");
+                sb.append(object.getLogName()).append(' ');
             } else {
                 Player player = game.getPlayer(targetId);
                 if (player != null) {
-                    sb.append(player.getLogName()).append(" ");
+                    sb.append(player.getLogName()).append(' ');
                 }
             }
         }

@@ -34,8 +34,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import mage.cards.Card;
-import mage.constants.CardType;
 import mage.counters.Counters;
 import mage.game.ExileZone;
 import mage.game.Game;
@@ -48,7 +48,6 @@ import mage.players.Player;
 import mage.players.net.UserData;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class PlayerView implements Serializable {
@@ -84,6 +83,7 @@ public class PlayerView implements Serializable {
     private final boolean passedUntilStackResolved; // F8
     private final boolean passedAllTurns; // F9
     private final boolean passedUntilEndStepBeforeMyTurn; // F11
+    private final boolean monarch;
 
     public PlayerView(Player player, GameState state, Game game, UUID createdForPlayerId, UUID watcherUserId) {
         this.playerId = player.getId();
@@ -125,8 +125,9 @@ public class PlayerView implements Serializable {
         } catch (ConcurrentModificationException e) {
             // can happen as a player left battlefield while PlayerView is created
         }
-        this.topCard = player.isTopCardRevealed() && player.getLibrary().size() > 0
-                ? new CardView(player.getLibrary().getFromTop(game)) : null;
+        Card cardOnTop = (player.isTopCardRevealed() && player.getLibrary().hasCards())
+                ? player.getLibrary().getFromTop(game) : null;
+        this.topCard = cardOnTop != null ? new CardView(cardOnTop) : null;
         if (player.getUserData() != null) {
             this.userData = player.getUserData();
         } else {
@@ -137,17 +138,7 @@ public class PlayerView implements Serializable {
             if (commandObject instanceof Emblem) {
                 Emblem emblem = (Emblem) commandObject;
                 if (emblem.getControllerId().equals(this.playerId)) {
-                    Card sourceCard = game.getCard(((CommandObject) emblem).getSourceId());
-                    if (sourceCard != null) {
-                        if (!sourceCard.getCardType().contains(CardType.PLANESWALKER)) {
-                            if (sourceCard.getSecondCardFace() != null) {
-                                sourceCard = sourceCard.getSecondCardFace();
-                            }
-                        }
-                        commandList.add(new EmblemView(emblem, sourceCard));
-                    } else {
-                        commandList.add(new EmblemView(emblem));
-                    }
+                    commandList.add(new EmblemView(emblem));
                 }
             } else if (commandObject instanceof Commander) {
                 Commander commander = (Commander) commandObject;
@@ -172,6 +163,7 @@ public class PlayerView implements Serializable {
         this.passedAllTurns = player.getPassedAllTurns();
         this.passedUntilStackResolved = player.getPassedUntilStackResolved();
         this.passedUntilEndStepBeforeMyTurn = player.getPassedUntilEndStepBeforeMyTurn();
+        this.monarch = player.getId().equals(game.getMonarchId());
     }
 
     private boolean showInBattlefield(Permanent permanent, GameState state) {
@@ -266,7 +258,7 @@ public class PlayerView implements Serializable {
     }
 
     public boolean hasAttachments() {
-        return attachments != null && attachments.size() > 0;
+        return attachments != null && !attachments.isEmpty();
     }
 
     public int getStatesSavedSize() {
@@ -308,4 +300,9 @@ public class PlayerView implements Serializable {
     public boolean isPassedUntilEndStepBeforeMyTurn() {
         return passedUntilEndStepBeforeMyTurn;
     }
+
+    public boolean isMonarch() {
+        return monarch;
+    }
+
 }

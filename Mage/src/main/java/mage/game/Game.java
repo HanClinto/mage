@@ -132,7 +132,7 @@ public interface Game extends MageItem, Serializable {
 
     void setZone(UUID objectId, Zone zone);
 
-    void addPlayer(Player player, Deck deck) throws GameException;
+    void addPlayer(Player player, Deck deck);
 
     Player getPlayer(UUID playerId);
 
@@ -335,10 +335,10 @@ public interface Game extends MageItem, Serializable {
     void end();
 
     void cleanUp();
+
     /*
      * Gives back the number of cards the player has after the next mulligan
      */
-
     int mulliganDownTo(UUID playerId);
 
     void mulligan(UUID playerId);
@@ -364,9 +364,9 @@ public interface Game extends MageItem, Serializable {
 
     void addEffect(ContinuousEffect continuousEffect, Ability source);
 
-    void addEmblem(Emblem emblem, Ability source);
+    void addEmblem(Emblem emblem, MageObject sourceObject, Ability source);
 
-    void addEmblem(Emblem emblem, Ability source, UUID toPlayerId);
+    void addEmblem(Emblem emblem, MageObject sourceObject, UUID toPlayerId);
 
     void addCommander(Commander commander);
 
@@ -437,7 +437,7 @@ public interface Game extends MageItem, Serializable {
     // controlling the behaviour of replacement effects while permanents entering the battlefield
     void setScopeRelevant(boolean scopeRelevant);
 
-    public boolean getScopeRelevant();
+    boolean getScopeRelevant();
 
     // players' timers
     void initTimer(UUID playerId);
@@ -463,4 +463,8 @@ public interface Game extends MageItem, Serializable {
     void setEnterWithCounters(UUID sourceId, Counters counters);
 
     Counters getEnterWithCounters(UUID sourceId);
+
+    UUID getMonarchId();
+
+    void setMonarchId(Ability source, UUID monarchId);
 }

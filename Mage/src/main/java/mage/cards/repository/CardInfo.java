@@ -31,22 +31,21 @@ import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
+import java.util.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import mage.cards.FrameStyle;
-import mage.constants.CardType;
-import mage.constants.Rarity;
 import mage.ObjectColor;
 import mage.abilities.Ability;
 import mage.abilities.SpellAbility;
 import mage.abilities.common.PlanswalkerEntersWithLoyalityCountersAbility;
 import mage.cards.Card;
+import mage.cards.CardGraphicInfo;
 import mage.cards.CardImpl;
+import mage.cards.CardSetInfo;
+import mage.cards.FrameStyle;
 import mage.cards.mock.MockCard;
 import mage.cards.mock.MockSplitCard;
+import mage.constants.CardType;
+import mage.constants.Rarity;
 import mage.constants.SpellAbilityType;
 import org.apache.log4j.Logger;
 
@@ -66,7 +65,7 @@ public class CardInfo {
     protected String cardNumber;
     @DatabaseField(indexName = "setCode_cardNumber_index")
     protected String setCode;
-    @DatabaseField(unique = true, indexName = "className_index")
+    @DatabaseField(indexName = "className_index")
     protected String className;
     @DatabaseField
     protected String power;
@@ -103,6 +102,8 @@ public class CardInfo {
     @DatabaseField
     protected String frameStyle;
     @DatabaseField
+    protected boolean variousArt;
+    @DatabaseField
     protected boolean splitCard;
     @DatabaseField
     protected boolean splitCardHalf;
@@ -134,7 +135,7 @@ public class CardInfo {
         this.flipCard = card.isFlipCard();
         this.flipCardName = card.getFlipCardName();
 
-        this.doubleFaced = card.canTransform() && card.getSecondCardFace() != null;
+        this.doubleFaced = card.isTransformable() && card.getSecondCardFace() != null;
         this.nightCard = card.isNightCard();
         Card secondSide = card.getSecondCardFace();
         if (secondSide != null) {
@@ -143,6 +144,7 @@ public class CardInfo {
 
         this.frameStyle = card.getFrameStyle().toString();
         this.frameColor = card.getFrameColor(null).toString();
+        this.variousArt = card.getUsesVariousArt();
         this.blue = card.getColor(null).isBlue();
         this.black = card.getColor(null).isBlack();
         this.green = card.getColor(null).isGreen();
@@ -155,13 +157,13 @@ public class CardInfo {
         this.setManaCosts(card.getManaCost().getSymbols());
 
         int length = 0;
-        for (String rule: card.getRules()) {
+        for (String rule : card.getRules()) {
             length += rule.length();
         }
         if (length > MAX_RULE_LENGTH) {
             length = 0;
             ArrayList<String> shortRules = new ArrayList<>();
-            for (String rule: card.getRules()) {
+            for (String rule : card.getRules()) {
                 if (length + rule.length() + 3 <= MAX_RULE_LENGTH) {
                     shortRules.add(rule);
                     length += rule.length() + 3;
@@ -180,14 +182,14 @@ public class CardInfo {
         if (spellAbility != null) {
             SpellAbilityType spellAbilityType = spellAbility.getSpellAbilityType();
             if (spellAbilityType == SpellAbilityType.SPLIT_LEFT || spellAbilityType == SpellAbilityType.SPLIT_RIGHT) {
-                this.className = this.setCode + "." + this.name;
+                this.className = this.setCode + '.' + this.name;
                 this.splitCardHalf = true;
             }
         }
-        
+
         // Starting loyalty
-        if (card.getCardType().contains(CardType.PLANESWALKER)) {
-            for (Ability ab: card.getAbilities()) {
+        if (card.isPlaneswalker()) {
+            for (Ability ab : card.getAbilities()) {
                 if (ab instanceof PlanswalkerEntersWithLoyalityCountersAbility) {
                     this.startingLoyalty = "" + ((PlanswalkerEntersWithLoyalityCountersAbility) ab).getStartingLoyalty();
                 }
@@ -202,7 +204,7 @@ public class CardInfo {
     }
 
     public Card getCard() {
-        return CardImpl.createCard(className);
+        return CardImpl.createCard(className, new CardSetInfo(name, setCode, cardNumber, rarity, new CardGraphicInfo(FrameStyle.valueOf(frameStyle), variousArt)));
     }
 
     public Card getMockCard() {
@@ -214,7 +216,7 @@ public class CardInfo {
     }
 
     public boolean usesVariousArt() {
-        return Character.isDigit(className.charAt(className.length() - 1));
+        return variousArt;
     }
 
     public ObjectColor getColor() {
@@ -226,7 +228,7 @@ public class CardInfo {
         color.setWhite(white);
         return color;
     }
-    
+
     public ObjectColor getFrameColor() {
         return new ObjectColor(frameColor);
     }
@@ -245,13 +247,13 @@ public class CardInfo {
 
     private List<String> parseList(String list) {
         if (list.isEmpty()) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         return Arrays.asList(list.split(SEPARATOR));
     }
 
-    public final List<CardType> getTypes() {
-        ArrayList<CardType> list = new ArrayList<>();
+    public final EnumSet<CardType> getTypes() {
+        EnumSet<CardType> list = EnumSet.noneOf(CardType.class);
         for (String type : this.types.split(SEPARATOR)) {
             try {
                 list.add(CardType.valueOf(type));
@@ -261,7 +263,7 @@ public class CardInfo {
         return list;
     }
 
-    public final void setTypes(List<CardType> types) {
+    public final void setTypes(Set<CardType> types) {
         StringBuilder sb = new StringBuilder();
         for (CardType item : types) {
             sb.append(item.name()).append(SEPARATOR);
@@ -320,7 +322,7 @@ public class CardInfo {
     public String getToughness() {
         return toughness;
     }
-    
+
     public String getStartingLoyalty() {
         return startingLoyalty;
     }

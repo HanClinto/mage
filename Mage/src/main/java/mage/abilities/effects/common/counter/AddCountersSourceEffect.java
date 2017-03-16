@@ -103,11 +103,11 @@ public class AddCountersSourceEffect extends OneShotEffect {
                             countersToAdd--;
                         }
                         newCounter.add(countersToAdd);
-                        card.addCounters(newCounter, game);
+                        card.addCounters(newCounter, source, game);
                         if (informPlayers && !game.isSimulation()) {
                             Player player = game.getPlayer(source.getControllerId());
                             if (player != null) {
-                                game.informPlayers(player.getLogName() + " puts " + newCounter.getCount() + " " + newCounter.getName().toLowerCase() + " counter on " + card.getLogName());
+                                game.informPlayers(player.getLogName() + " puts " + newCounter.getCount() + ' ' + newCounter.getName().toLowerCase() + " counter on " + card.getLogName());
                             }
                         }
                     }
@@ -128,12 +128,12 @@ public class AddCountersSourceEffect extends OneShotEffect {
                             }
                             newCounter.add(countersToAdd);
                             int before = permanent.getCounters(game).getCount(newCounter.getName());
-                            permanent.addCounters(newCounter, game);
+                            permanent.addCounters(newCounter, source, game);
                             if (informPlayers && !game.isSimulation()) {
                                 int amountAdded = permanent.getCounters(game).getCount(newCounter.getName()) - before;
                                 Player player = game.getPlayer(source.getControllerId());
                                 if (player != null) {
-                                    game.informPlayers(player.getLogName() + " puts " + amountAdded + " " + newCounter.getName().toLowerCase() + " counter on " + permanent.getLogName());
+                                    game.informPlayers(player.getLogName() + " puts " + amountAdded + ' ' + newCounter.getName().toLowerCase() + " counter on " + permanent.getLogName());
                                 }
                             }
                         }
@@ -149,7 +149,7 @@ public class AddCountersSourceEffect extends OneShotEffect {
         StringBuilder sb = new StringBuilder();
         sb.append("put ");
         if (counter.getCount() > 1) {
-            sb.append(CardUtil.numberToText(counter.getCount())).append(" ");
+            sb.append(CardUtil.numberToText(counter.getCount())).append(' ');
         } else {
             if (amount.toString().equals("X") && amount.getMessage().isEmpty()) {
                 sb.append("X ");

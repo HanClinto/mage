@@ -28,7 +28,7 @@ public class GlowText extends JLabel {
     private Color glowColor;
     private boolean wrap;
     private int lineCount = 0;
-    private static Map<Key, BufferedImage> IMAGE_CACHE;
+    private final static Map<Key, BufferedImage> IMAGE_CACHE;
 
     private final static class Key {
 
@@ -125,12 +125,7 @@ public class GlowText extends JLabel {
     }
 
     static {
-        IMAGE_CACHE = ImageCaches.register(new MapMaker().softValues().makeComputingMap(new Function<Key, BufferedImage>() {
-            @Override
-            public BufferedImage apply(Key key) {
-                return createImage(key);
-            }
-        }));
+        IMAGE_CACHE = ImageCaches.register(new MapMaker().softValues().makeComputingMap((Function<Key, BufferedImage>) GlowText::createImage));
     }
 
     public void setGlow(Color glowColor, int size, float intensity) {

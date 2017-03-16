@@ -10,7 +10,7 @@ import javax.mail.internet.MimeMessage;
 import mage.server.util.ConfigSettings;
 import org.apache.log4j.Logger;
 
-public class MailClient {
+public final class MailClient {
 
     private static final Logger logger = Logger.getLogger(Main.class);
 
@@ -37,8 +37,7 @@ public class MailClient {
             message.setSubject(subject);
             message.setText(text);
 
-            Transport trnsport;
-            trnsport = session.getTransport("smtps");
+            Transport trnsport = session.getTransport("smtps");
             trnsport.connect(null, properties.getProperty("mail.password"));
             message.saveChanges();
             trnsport.sendMessage(message, message.getAllRecipients());

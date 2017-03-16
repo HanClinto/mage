@@ -5,12 +5,17 @@
  */
 package org.mage.card.arcane;
 
+import mage.ObjectColor;
+import mage.cards.FrameStyle;
+import mage.client.dialog.PreferencesDialog;
+import mage.constants.CardType;
+import mage.view.CardView;
+import mage.view.PermanentView;
+import org.apache.log4j.Logger;
+
+import javax.swing.*;
 import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.font.LineBreakMeasurer;
-import java.awt.font.TextAttribute;
-import java.awt.font.TextLayout;
-import java.awt.font.TextMeasurer;
+import java.awt.font.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.RasterFormatException;
@@ -22,17 +27,6 @@ import java.text.CharacterIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
-import javax.swing.ImageIcon;
-
-import mage.ObjectColor;
-import mage.cards.FrameStyle;
-import mage.client.cards.Permanent;
-import mage.client.dialog.PreferencesDialog;
-import mage.constants.CardType;
-import mage.view.CardView;
-import mage.view.PermanentView;
-import org.apache.log4j.Logger;
 
 
 /*
@@ -90,65 +84,65 @@ public class ModernCardRenderer extends CardRenderer {
         }
         return new Font("Arial", Font.PLAIN, 1);
     }
-    public static Font BASE_BELEREN_FONT = loadFont("beleren-bold");
+    public static final Font BASE_BELEREN_FONT = loadFont("beleren-bold");
 
-    public static Paint BG_TEXTURE_WHITE = loadBackgroundTexture("white");
-    public static Paint BG_TEXTURE_BLUE = loadBackgroundTexture("blue");
-    public static Paint BG_TEXTURE_BLACK = loadBackgroundTexture("black");
-    public static Paint BG_TEXTURE_RED = loadBackgroundTexture("red");
-    public static Paint BG_TEXTURE_GREEN = loadBackgroundTexture("green");
-    public static Paint BG_TEXTURE_GOLD = loadBackgroundTexture("gold");
-    public static Paint BG_TEXTURE_ARTIFACT = loadBackgroundTexture("artifact");
-    public static Paint BG_TEXTURE_LAND = loadBackgroundTexture("land");
-    public static Paint BG_TEXTURE_VEHICLE = loadBackgroundTexture("vehicle");
+    public static final Paint BG_TEXTURE_WHITE = loadBackgroundTexture("white");
+    public static final Paint BG_TEXTURE_BLUE = loadBackgroundTexture("blue");
+    public static final Paint BG_TEXTURE_BLACK = loadBackgroundTexture("black");
+    public static final Paint BG_TEXTURE_RED = loadBackgroundTexture("red");
+    public static final Paint BG_TEXTURE_GREEN = loadBackgroundTexture("green");
+    public static final Paint BG_TEXTURE_GOLD = loadBackgroundTexture("gold");
+    public static final Paint BG_TEXTURE_ARTIFACT = loadBackgroundTexture("artifact");
+    public static final Paint BG_TEXTURE_LAND = loadBackgroundTexture("land");
+    public static final Paint BG_TEXTURE_VEHICLE = loadBackgroundTexture("vehicle");
 
-    public static BufferedImage FRAME_INVENTION = loadFramePart("invention_frame");
+    public static final BufferedImage FRAME_INVENTION = loadFramePart("invention_frame");
 
-    public static Color BORDER_WHITE = new Color(216, 203, 188);
-    public static Color BORDER_BLUE = new Color(20, 121, 175);
-    public static Color BORDER_BLACK = new Color(45, 45, 35);
-    public static Color BORDER_RED = new Color(201, 71, 58);
-    public static Color BORDER_GREEN = new Color(4, 136, 69);
-    public static Color BORDER_GOLD = new Color(255, 228, 124);
-    public static Color BORDER_COLORLESS = new Color(238, 242, 242);
-    public static Color BORDER_LAND = new Color(190, 173, 115);
+    public static final Color BORDER_WHITE = new Color(216, 203, 188);
+    public static final Color BORDER_BLUE = new Color(20, 121, 175);
+    public static final Color BORDER_BLACK = new Color(45, 45, 35);
+    public static final Color BORDER_RED = new Color(201, 71, 58);
+    public static final Color BORDER_GREEN = new Color(4, 136, 69);
+    public static final Color BORDER_GOLD = new Color(255, 228, 124);
+    public static final Color BORDER_COLORLESS = new Color(238, 242, 242);
+    public static final Color BORDER_LAND = new Color(190, 173, 115);
 
-    public static Color BOX_WHITE = new Color(244, 245, 239);
-    public static Color BOX_BLUE = new Color(201, 223, 237);
-    public static Color BOX_BLACK = new Color(204, 194, 192);
-    public static Color BOX_RED = new Color(246, 208, 185);
-    public static Color BOX_GREEN = new Color(205, 221, 213);
-    public static Color BOX_GOLD = new Color(223, 195, 136);
-    public static Color BOX_COLORLESS = new Color(220, 228, 232);
-    public static Color BOX_LAND = new Color(220, 215, 213);
-    public static Color BOX_INVENTION = new Color(209, 97, 33);
-    public static Color BOX_VEHICLE = new Color(155, 105, 60);
+    public static final Color BOX_WHITE = new Color(244, 245, 239);
+    public static final Color BOX_BLUE = new Color(201, 223, 237);
+    public static final Color BOX_BLACK = new Color(204, 194, 192);
+    public static final Color BOX_RED = new Color(246, 208, 185);
+    public static final Color BOX_GREEN = new Color(205, 221, 213);
+    public static final Color BOX_GOLD = new Color(223, 195, 136);
+    public static final Color BOX_COLORLESS = new Color(220, 228, 232);
+    public static final Color BOX_LAND = new Color(220, 215, 213);
+    public static final Color BOX_INVENTION = new Color(209, 97, 33);
+    public static final Color BOX_VEHICLE = new Color(155, 105, 60);
 
-    public static Color BOX_WHITE_NIGHT = new Color(169, 160, 145);
-    public static Color BOX_BLUE_NIGHT = new Color(46, 133, 176);
-    public static Color BOX_BLACK_NIGHT = new Color(95, 90, 89);
-    public static Color BOX_RED_NIGHT = new Color(188, 87, 57);
-    public static Color BOX_GREEN_NIGHT = new Color(31, 100, 44);
-    public static Color BOX_GOLD_NIGHT = new Color(171, 134, 70);
-    public static Color BOX_COLORLESS_NIGHT = new Color(118, 147, 158);
+    public static final Color BOX_WHITE_NIGHT = new Color(169, 160, 145);
+    public static final Color BOX_BLUE_NIGHT = new Color(46, 133, 176);
+    public static final Color BOX_BLACK_NIGHT = new Color(95, 90, 89);
+    public static final Color BOX_RED_NIGHT = new Color(188, 87, 57);
+    public static final Color BOX_GREEN_NIGHT = new Color(31, 100, 44);
+    public static final Color BOX_GOLD_NIGHT = new Color(171, 134, 70);
+    public static final Color BOX_COLORLESS_NIGHT = new Color(118, 147, 158);
 
-    public static Color LAND_TEXTBOX_WHITE = new Color(248, 232, 188, 244);
-    public static Color LAND_TEXTBOX_BLUE = new Color(189, 212, 236, 244);
-    public static Color LAND_TEXTBOX_BLACK = new Color(174, 164, 162, 244);
-    public static Color LAND_TEXTBOX_RED = new Color(242, 168, 133, 244);
-    public static Color LAND_TEXTBOX_GREEN = new Color(198, 220, 198, 244);
-    public static Color LAND_TEXTBOX_GOLD = new Color(236, 229, 207, 244);
+    public static final Color LAND_TEXTBOX_WHITE = new Color(248, 232, 188, 244);
+    public static final Color LAND_TEXTBOX_BLUE = new Color(189, 212, 236, 244);
+    public static final Color LAND_TEXTBOX_BLACK = new Color(174, 164, 162, 244);
+    public static final Color LAND_TEXTBOX_RED = new Color(242, 168, 133, 244);
+    public static final Color LAND_TEXTBOX_GREEN = new Color(198, 220, 198, 244);
+    public static final Color LAND_TEXTBOX_GOLD = new Color(236, 229, 207, 244);
 
-    public static Color TEXTBOX_WHITE = new Color(252, 249, 244, 244);
-    public static Color TEXTBOX_BLUE = new Color(229, 238, 247, 244);
-    public static Color TEXTBOX_BLACK = new Color(241, 241, 240, 244);
-    public static Color TEXTBOX_RED = new Color(243, 224, 217, 244);
-    public static Color TEXTBOX_GREEN = new Color(217, 232, 223, 244);
-    public static Color TEXTBOX_GOLD = new Color(240, 234, 209, 244);
-    public static Color TEXTBOX_COLORLESS = new Color(219, 229, 233, 244);
-    public static Color TEXTBOX_LAND = new Color(218, 214, 212, 244);
+    public static final Color TEXTBOX_WHITE = new Color(252, 249, 244, 244);
+    public static final Color TEXTBOX_BLUE = new Color(229, 238, 247, 244);
+    public static final Color TEXTBOX_BLACK = new Color(241, 241, 240, 244);
+    public static final Color TEXTBOX_RED = new Color(243, 224, 217, 244);
+    public static final Color TEXTBOX_GREEN = new Color(217, 232, 223, 244);
+    public static final Color TEXTBOX_GOLD = new Color(240, 234, 209, 244);
+    public static final Color TEXTBOX_COLORLESS = new Color(219, 229, 233, 244);
+    public static final Color TEXTBOX_LAND = new Color(218, 214, 212, 244);
 
-    public static Color ERROR_COLOR = new Color(255, 0, 255);
+    public static final Color ERROR_COLOR = new Color(255, 0, 255);
 
     ///////////////////////////////////////////////////////////////////////////
     // Layout metrics for modern border cards
@@ -166,18 +160,18 @@ public class ModernCardRenderer extends CardRenderer {
     protected int contentWidth;
 
     // How tall the name / type lines and P/T box are
-    protected static float BOX_HEIGHT_FRAC = 0.065f; // x cardHeight
-    protected static int BOX_HEIGHT_MIN = 16;
+    protected static final float BOX_HEIGHT_FRAC = 0.065f; // x cardHeight
+    protected static final int BOX_HEIGHT_MIN = 16;
     protected int boxHeight;
 
     // How far down the card is the type line placed?
-    protected static float TYPE_LINE_Y_FRAC = 0.57f; // x cardHeight
-    protected static float TYPE_LINE_Y_FRAC_TOKEN = 0.70f;
-    protected static float TYPE_LINE_Y_FRAC_FULL_ART = 0.74f;
+    protected static final float TYPE_LINE_Y_FRAC = 0.57f; // x cardHeight
+    protected static final float TYPE_LINE_Y_FRAC_TOKEN = 0.70f;
+    protected static final float TYPE_LINE_Y_FRAC_FULL_ART = 0.74f;
     protected int typeLineY;
 
     // Possible sizes of rules text font
-    protected static int[] RULES_TEXT_FONT_SIZES = {24, 18, 15, 12, 9};
+    protected static final int[] RULES_TEXT_FONT_SIZES = {24, 18, 15, 12, 9};
 
     // How large is the box text, and how far is it down the boxes
     protected int boxTextHeight;
@@ -191,7 +185,7 @@ public class ModernCardRenderer extends CardRenderer {
     protected Font ptTextFont;
 
     // Processed mana cost string
-    protected String manaCostString;
+    protected final String manaCostString;
 
     public ModernCardRenderer(CardView card, boolean isTransformed) {
         // Pass off to parent
@@ -221,7 +215,7 @@ public class ModernCardRenderer extends CardRenderer {
                 BOX_HEIGHT_FRAC * cardHeight);
 
         // Type line at
-        typeLineY = (int)(getTypeLineYFrac() * cardHeight);
+        typeLineY = (int) (getTypeLineYFrac() * cardHeight);
 
         // Box text height
         boxTextHeight = getTextHeightForBoxHeight(boxHeight);
@@ -230,8 +224,7 @@ public class ModernCardRenderer extends CardRenderer {
         //boxTextFont = BASE_BELEREN_FONT.deriveFont(Font.PLAIN, boxTextHeight);
         boxTextFont = new Font("Arial", Font.PLAIN, boxTextHeight);
         boxTextFontNarrow = new Font("Arial Narrow", Font.PLAIN, boxTextHeight);
-        
-        
+
         // Box text height
         ptTextHeight = getPTTextHeightForLineHeight(boxHeight);
         ptTextOffset = (boxHeight - ptTextHeight) / 2;
@@ -254,11 +247,11 @@ public class ModernCardRenderer extends CardRenderer {
         } else {
             borderColor = Color.BLACK;
         }
-        
+
         // Draw border as one rounded rectangle
         g.setColor(borderColor);
         g.fillRoundRect(0, 0, cardWidth, cardHeight, cornerRadius, cornerRadius);
-        
+
         /* // Separate selection highlight border from card itself. Not used right now
         if (borderColor != null) {
             float hwidth = borderWidth / 2.0f;
@@ -273,7 +266,7 @@ public class ModernCardRenderer extends CardRenderer {
             g2.draw(rect);
             g2.dispose();
         }
-        */
+         */
     }
 
     @Override
@@ -308,13 +301,14 @@ public class ModernCardRenderer extends CardRenderer {
 
     /**
      * Get the region to slice out of a source art image for the card
+     *
      * @return
      */
     private Rectangle2D getArtRect() {
         Rectangle2D rect;
         if (useInventionFrame()) {
             rect = new Rectangle2D.Float(0, 0, 1, 1);
-        } else if (cardView.getFrameStyle().isFullArt() || cardView.isToken()) {
+        } else if (cardView.getFrameStyle().isFullArt() || (cardView.isToken())) {
             rect = new Rectangle2D.Float(.079f, .11f, .84f, .63f);
         } else {
             rect = new Rectangle2D.Float(.079f, .11f, .84f, .42f);
@@ -323,7 +317,7 @@ public class ModernCardRenderer extends CardRenderer {
     }
 
     private float getTypeLineYFrac() {
-        if (cardView.isToken()) {
+        if (cardView.isToken() && cardView.getCardNumber() == null) {
             return TYPE_LINE_Y_FRAC_TOKEN;
         } else if (cardView.getFrameStyle().isFullArt()) {
             return TYPE_LINE_Y_FRAC_FULL_ART;
@@ -334,9 +328,9 @@ public class ModernCardRenderer extends CardRenderer {
 
     protected boolean isSourceArtFullArt() {
         int color = artImage.getRGB(0, artImage.getHeight() / 2);
-        return (((color & 0x00FF0000) > 0x00200000) ||
-                ((color & 0x0000FF00) > 0x00002000) ||
-                ((color & 0x000000FF) > 0x00000020));
+        return (((color & 0x00FF0000) > 0x00200000)
+                || ((color & 0x0000FF00) > 0x00002000)
+                || ((color & 0x000000FF) > 0x00000020));
     }
 
     private boolean useInventionFrame() {
@@ -365,24 +359,22 @@ public class ModernCardRenderer extends CardRenderer {
             double targetAspect = targetWidth / targetHeight;
             if (useInventionFrame()) {
                 // No adjustment to art
+            } else if (targetAspect * artHeight < artWidth) {
+                // Trim off some width
+                artWidth = targetAspect * artHeight;
             } else {
-                if (targetAspect * artHeight < artWidth) {
-                    // Trim off some width
-                    artWidth = targetAspect * artHeight;
-                } else {
-                    // Trim off some height
-                    artHeight = artWidth / targetAspect;
-                }
+                // Trim off some height
+                artHeight = artWidth / targetAspect;
             }
             try {
                 BufferedImage subImg
                         = artImage.getSubimage(
-                        (int) (artRect.getX() * fullCardImgWidth), (int) (artRect.getY() * fullCardImgHeight),
-                        (int) artWidth, (int) artHeight);
+                                (int) (artRect.getX() * fullCardImgWidth), (int) (artRect.getY() * fullCardImgHeight),
+                                (int) artWidth, (int) artHeight);
                 if (useInventionFrame()) {
                     g.drawImage(subImg,
                             borderWidth, borderWidth,
-                            cardWidth - 2*borderWidth, cardHeight - 2*borderWidth,
+                            cardWidth - 2 * borderWidth, cardHeight - 2 * borderWidth,
                             null);
                 } else {
                     g.drawImage(subImg,
@@ -643,7 +635,7 @@ public class ModernCardRenderer extends CardRenderer {
             }
             g.setColor(textColor);
             g.setFont(ptTextFont);
-            String ptText = cardView.getPower() + "/" + cardView.getToughness();
+            String ptText = cardView.getPower() + '/' + cardView.getToughness();
             int ptTextWidth = g.getFontMetrics().stringWidth(ptText);
             g.drawString(ptText,
                     x + (partWidth - ptTextWidth) / 2, curY - ptTextOffset - 1);
@@ -712,7 +704,7 @@ public class ModernCardRenderer extends CardRenderer {
         if ((cardView instanceof PermanentView) && ((PermanentView) cardView).getDamage() > 0) {
             int x = cardWidth - partWidth - borderWidth;
             int y = curY - boxHeight;
-            String damage = "" + ((PermanentView) cardView).getDamage();
+            String damage = String.valueOf(((PermanentView) cardView).getDamage());
             g.setFont(ptTextFont);
             int txWidth = g.getFontMetrics().stringWidth(damage);
             g.setColor(Color.red);
@@ -726,7 +718,8 @@ public class ModernCardRenderer extends CardRenderer {
     // Draw the card's textbox in a given rect
     protected boolean loyaltyAbilityColorToggle = false;
 
-    private class RuleLayout {
+    private static class RuleLayout {
+
         public List<AttributedString> attributedRules;
         public int remainingHeight;
         public boolean fits;
@@ -735,7 +728,8 @@ public class ModernCardRenderer extends CardRenderer {
     }
 
     /**
-     * Figure out if a given text size will work for laying out the rules in a card textbox
+     * Figure out if a given text size will work for laying out the rules in a
+     * card textbox
      */
     protected RuleLayout layoutRules(Graphics2D g, List<TextboxRule> rules, int w, int h, int fontSize) {
         // The fonts to try
@@ -749,7 +743,7 @@ public class ModernCardRenderer extends CardRenderer {
         for (TextboxRule rule : rules) {
             AttributedString attributed = rule.generateAttributedString(font, fontItalic);
             attributedRules.add(attributed);
-            remaining -= drawSingleRule(g, attributed, rule, 0, 0, w, remaining, /*doDraw=*/false);
+            remaining -= drawSingleRule(g, attributed, rule, 0, 0, w, remaining, /*doDraw=*/ false);
             if (remaining < 0) {
                 fits = false;
                 break;
@@ -773,19 +767,19 @@ public class ModernCardRenderer extends CardRenderer {
         // Add the keyword rule if there are any keywords
         if (!textboxKeywords.isEmpty()) {
             String keywordRulesString = getKeywordRulesString();
-            TextboxRule keywordsRule = new TextboxRule(keywordRulesString, new ArrayList<TextboxRule.AttributeRegion>());
+            TextboxRule keywordsRule = new TextboxRule(keywordRulesString, new ArrayList<>());
             allRules.add(0, keywordsRule);
         }
 
         // Basic mana draw mana symbol in textbox (for basic lands)
         if (allRules.size() == 1 && (allRules.get(0) instanceof TextboxBasicManaRule) && cardView.getCardTypes().contains(CardType.LAND)) {
-            drawBasicManaTextbox(g, x, y, w, h, ((TextboxBasicManaRule)allRules.get(0)).getBasicManaSymbol());
+            drawBasicManaTextbox(g, x, y, w, h, ((TextboxBasicManaRule) allRules.get(0)).getBasicManaSymbol());
             return;
         }
 
         // Go through possible font sizes in descending order to find the best fit
         RuleLayout bestLayout = null;
-        for (int fontSize: RULES_TEXT_FONT_SIZES) {
+        for (int fontSize : RULES_TEXT_FONT_SIZES) {
             bestLayout = layoutRules(g, allRules, w, h, fontSize);
 
             // Stop, we found a good fit
@@ -803,7 +797,7 @@ public class ModernCardRenderer extends CardRenderer {
         // If so, calculate the padding based on how much space was left over
         int padding;
         if (bestLayout.fits) {
-            padding = (int) (((float)bestLayout.remainingHeight) / (1 + allRules.size()));
+            padding = (int) (((float) bestLayout.remainingHeight) / (1 + allRules.size()));
         } else {
             // When the text doesn't fit to begin with there's no room for padding
             padding = 0;
@@ -828,9 +822,9 @@ public class ModernCardRenderer extends CardRenderer {
     // Draw a basic mana symbol
     private void drawBasicManaTextbox(Graphics2D g, int x, int y, int w, int h, String symbol) {
         String symbs = symbol;
-        int symbHeight = (int)(0.8*h);
+        int symbHeight = (int) (0.8 * h);
         int manaCostWidth = CardRendererUtils.getManaCostWidth(symbs, symbHeight);
-        ManaSymbols.draw(g, symbs, x + (w - manaCostWidth)/2, y + (h - symbHeight)/2, symbHeight);
+        ManaSymbols.draw(g, symbs, x + (w - manaCostWidth) / 2, y + (h - symbHeight) / 2, symbHeight);
     }
 
     // Get the first line of the textbox, the keyword string
@@ -989,7 +983,7 @@ public class ModernCardRenderer extends CardRenderer {
             g.setColor(Color.black);
             g.fillOval(borderWidth + 1, totalContentInset + 1, boxHeight - 2, boxHeight - 2);
             g.setColor(Color.white);
-            if (isNightCard()) {
+            if (isTransformed) {
                 g.fillArc(borderWidth + 3, totalContentInset + 3, boxHeight - 6, boxHeight - 6, 90, 270);
                 g.setColor(Color.black);
                 g.fillArc(borderWidth + 3 + 3, totalContentInset + 3, boxHeight - 6 - 3, boxHeight - 6, 90, 270);
@@ -1015,7 +1009,7 @@ public class ModernCardRenderer extends CardRenderer {
 
     // Determine the color of the name / type line text
     protected Color getBoxTextColor() {
-        if (isNightCard()) {
+        if (isTransformed) {
             return Color.white;
         } else if (cardView.isAbility()) {
             return Color.white;
@@ -1205,12 +1199,10 @@ public class ModernCardRenderer extends CardRenderer {
                         0, 0, width, 0,
                         new float[]{0.4f, 0.6f},
                         translatedColors);
+            } else if (types.contains(CardType.LAND)) {
+                return LAND_TEXTBOX_GOLD;
             } else {
-                if (types.contains(CardType.LAND)) {
-                    return LAND_TEXTBOX_GOLD;
-                } else {
-                    return TEXTBOX_GOLD;
-                }
+                return TEXTBOX_GOLD;
             }
         } else if (colors.isColorless()) {
             if (types.contains(CardType.LAND)) {
@@ -1218,12 +1210,10 @@ public class ModernCardRenderer extends CardRenderer {
             } else {
                 return TEXTBOX_COLORLESS;
             }
+        } else if (types.contains(CardType.LAND)) {
+            return getLandTextboxColor(colors);
         } else {
-            if (types.contains(CardType.LAND)) {
-                return getLandTextboxColor(colors);
-            } else {
-                return getTextboxColor(colors);
-            }
+            return getTextboxColor(colors);
         }
     }
 }

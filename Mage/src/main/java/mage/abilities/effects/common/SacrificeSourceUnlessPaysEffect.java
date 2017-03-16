@@ -5,6 +5,7 @@ import mage.abilities.Mode;
 import mage.abilities.costs.Cost;
 import mage.abilities.effects.OneShotEffect;
 import mage.constants.Outcome;
+import mage.constants.Zone;
 import mage.game.Game;
 import mage.game.permanent.Permanent;
 import mage.players.Player;
@@ -32,20 +33,24 @@ public class SacrificeSourceUnlessPaysEffect extends OneShotEffect {
         Player controller = game.getPlayer(source.getControllerId());
         Permanent sourcePermanent = game.getPermanentOrLKIBattlefield(source.getSourceId());
         if (controller != null && sourcePermanent != null) {
-            StringBuilder sb = new StringBuilder(cost.getText()).append("?");
+            StringBuilder sb = new StringBuilder(cost.getText()).append('?');
             if (!sb.toString().toLowerCase().startsWith("exile ") && !sb.toString().toLowerCase().startsWith("return ")) {
                 sb.insert(0, "Pay ");
             }
             String message = CardUtil.replaceSourceName(sb.toString(), sourcePermanent.getLogName());
             message = Character.toUpperCase(message.charAt(0)) + message.substring(1);
-            if (controller.chooseUse(Outcome.Benefit, message, source, game)) {
+            if (cost.canPay(source, source.getSourceId(), source.getControllerId(), game)
+                    && controller.chooseUse(Outcome.Benefit, message, source, game)) {
                 cost.clearPaid();
                 if (cost.pay(source, game, source.getSourceId(), source.getControllerId(), false, null)) {
-                    game.informPlayers(controller.getLogName() + " pays " + cost.toString());
+                    game.informPlayers(controller.getLogName() + " pays " + cost.getText());
                     return true;
                 }
             }
-            sourcePermanent.sacrifice(source.getSourceId(), game);
+            if (source.getSourceObjectZoneChangeCounter() == game.getState().getZoneChangeCounter(source.getSourceId())
+                    && game.getState().getZone(source.getSourceId()) == Zone.BATTLEFIELD) {
+                sourcePermanent.sacrifice(source.getSourceId(), game);
+            }
             return true;
         }
         return false;

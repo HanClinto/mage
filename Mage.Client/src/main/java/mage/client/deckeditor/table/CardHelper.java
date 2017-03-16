@@ -37,7 +37,7 @@ import mage.view.CardView;
  * 
  * @author nantuko
  */
-public class CardHelper {
+public final class CardHelper {
     private CardHelper() {
     }
 
@@ -56,18 +56,22 @@ public class CardHelper {
         StringBuilder type = new StringBuilder();
         for (String superType : c.getSuperTypes()) {
             type.append(superType);
-            type.append(" ");
+            type.append(' ');
         }
         for (CardType cardType : c.getCardTypes()) {
             type.append(cardType.toString());
-            type.append(" ");
+            type.append(' ');
         }
-        if (c.getSubTypes().size() > 0) {
+        if (!c.getSubTypes().isEmpty()) {
             type.append("- ");
             for (String subType : c.getSubTypes()) {
                 type.append(subType);
-                type.append(" ");
+                type.append(' ');
             }
+        }
+        if (type.length() > 0) {
+            // remove trailing space
+            type.deleteCharAt(type.length() - 1);
         }
         return type.toString();
     }

@@ -35,6 +35,7 @@ import mage.Mana;
 import mage.abilities.Abilities;
 import mage.abilities.Ability;
 import mage.abilities.SpellAbility;
+import mage.constants.CardType;
 import mage.constants.Rarity;
 import mage.constants.Zone;
 import mage.counters.Counter;
@@ -53,7 +54,7 @@ public interface Card extends MageObject {
 
     void setOwnerId(UUID ownerId);
 
-    public Abilities<Ability> getAbilities(Game game);
+    Abilities<Ability> getAbilities(Game game);
 
     void setSpellAbility(SpellAbility ability);
 
@@ -66,7 +67,7 @@ public interface Card extends MageObject {
     String getExpansionSetCode();
 
     String getTokenSetCode();
-    
+
     String getTokenDescriptor();
 
     void checkForCountersToAdd(Permanent permanent, Game game);
@@ -85,7 +86,9 @@ public interface Card extends MageObject {
 
     boolean isSplitCard();
 
-    boolean canTransform();
+    boolean isTransformable();
+
+    void setTransformable(boolean transformable);
 
     Card getSecondCardFace();
 
@@ -145,8 +148,6 @@ public interface Card extends MageObject {
 
     List<Mana> getMana();
 
-    void build();
-
     /**
      *
      * @return true if there exists various art images for this card
@@ -157,9 +158,9 @@ public interface Card extends MageObject {
 
     Counters getCounters(GameState state);
 
-    boolean addCounters(Counter counter, Game game);
+    boolean addCounters(Counter counter, Ability source, Game game);
 
-    boolean addCounters(Counter counter, Game game, ArrayList<UUID> appliedEffects);
+    boolean addCounters(Counter counter, Ability source, Game game, ArrayList<UUID> appliedEffects);
 
     void removeCounters(String name, int amount, Game game);
 
@@ -174,4 +175,7 @@ public interface Card extends MageObject {
      * returned
      */
     Card getMainCard();
+
+
+
 }

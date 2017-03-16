@@ -43,7 +43,7 @@ import mage.watchers.Watcher;
  */
 public class PlayerCastCreatureWatcher extends Watcher {
 
-    Set<UUID> playerIds = new HashSet<>();
+    final Set<UUID> playerIds = new HashSet<>();
 
     public PlayerCastCreatureWatcher() {
         super("PlayerCastCreature", WatcherScope.GAME);
@@ -58,7 +58,7 @@ public class PlayerCastCreatureWatcher extends Watcher {
     public void watch(GameEvent event, Game game) {
         if (event.getType() == GameEvent.EventType.SPELL_CAST) {
             Spell spell = (Spell) game.getObject(event.getTargetId());
-            if (spell.getCardType().contains(CardType.CREATURE)) {
+            if (spell.isCreature()) {
                 playerIds.add(spell.getControllerId());
             }
         }

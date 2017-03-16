@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import mage.constants.CardType;
 import mage.constants.WatcherScope;
 import mage.game.Game;
 import mage.game.events.GameEvent;
@@ -22,6 +23,7 @@ import mage.watchers.Watcher;
 public class PermanentsEnteredBattlefieldWatcher extends Watcher {
 
     private final HashMap<UUID, List<Permanent>> enteringBattlefield = new HashMap<>();
+    private final HashMap<UUID, List<Permanent>> enteringBattlefieldLastTurn = new HashMap<>();
 
     public PermanentsEnteredBattlefieldWatcher() {
         super(PermanentsEnteredBattlefieldWatcher.class.getName(), WatcherScope.GAME);
@@ -29,6 +31,8 @@ public class PermanentsEnteredBattlefieldWatcher extends Watcher {
 
     public PermanentsEnteredBattlefieldWatcher(final PermanentsEnteredBattlefieldWatcher watcher) {
         super(watcher);
+        this.enteringBattlefield.putAll(watcher.enteringBattlefield);
+        this.enteringBattlefieldLastTurn.putAll(watcher.enteringBattlefieldLastTurn);
     }
 
     @Override
@@ -40,6 +44,9 @@ public class PermanentsEnteredBattlefieldWatcher extends Watcher {
     public void watch(GameEvent event, Game game) {
         if (event.getType() == GameEvent.EventType.ENTERS_THE_BATTLEFIELD) {
             Permanent perm = game.getPermanentEntering(event.getTargetId());
+            if (perm == null) {
+                perm = game.getPermanent(event.getTargetId());
+            }
             if (perm != null) {
                 List<Permanent> permanents;
                 if (!enteringBattlefield.containsKey(perm.getControllerId())) {
@@ -56,10 +63,25 @@ public class PermanentsEnteredBattlefieldWatcher extends Watcher {
     @Override
     public void reset() {
         super.reset();
+        enteringBattlefieldLastTurn.clear();
+        enteringBattlefieldLastTurn.putAll(enteringBattlefield);
         enteringBattlefield.clear();
     }
 
     public List<Permanent> getThisTurnEnteringPermanents(UUID playerId) {
         return enteringBattlefield.get(playerId);
+    }
+
+    public boolean AnotherCreatureEnteredBattlefieldUnderPlayersControlLastTurn(Permanent sourcePermanent, Game game) {
+        if (enteringBattlefieldLastTurn.containsKey(sourcePermanent.getControllerId())) {
+            for (Permanent permanent : enteringBattlefieldLastTurn.get(sourcePermanent.getControllerId())) {
+                if (!permanent.getId().equals(sourcePermanent.getId())
+                        //|| permanent.getZoneChangeCounter(game) == sourcePermanent.getZoneChangeCounter(game) why is this needed?
+                        && permanent.isCreature()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

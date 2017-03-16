@@ -27,9 +27,7 @@
  */
 package mage.view;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import mage.MageObject;
 import mage.ObjectColor;
@@ -46,6 +44,7 @@ import mage.constants.Rarity;
 import mage.constants.Zone;
 import mage.counters.Counter;
 import mage.counters.CounterType;
+import mage.designations.Designation;
 import mage.game.Game;
 import mage.game.command.Emblem;
 import mage.game.permanent.Permanent;
@@ -55,7 +54,6 @@ import mage.game.stack.Spell;
 import mage.game.stack.StackAbility;
 import mage.target.Target;
 import mage.target.Targets;
-import org.apache.log4j.Logger;
 
 /**
  * @author BetaSteward_at_googlemail.com
@@ -72,7 +70,7 @@ public class CardView extends SimpleCardView {
     protected String toughness;
     protected String loyalty;
     protected String startingLoyalty;
-    protected List<CardType> cardTypes;
+    protected EnumSet<CardType> cardTypes;
     protected List<String> subTypes;
     protected List<String> superTypes;
     protected ObjectColor color;
@@ -81,7 +79,7 @@ public class CardView extends SimpleCardView {
     protected List<String> manaCost;
     protected int convertedManaCost;
     protected Rarity rarity;
-    
+
     protected MageObjectType mageObjectType = MageObjectType.NULL;
 
     protected boolean isAbility;
@@ -91,7 +89,7 @@ public class CardView extends SimpleCardView {
     protected CardView ability;
     protected int type;
 
-    protected boolean canTransform;
+    protected boolean transformable;
     protected CardView secondCardFace;
     protected boolean transformed;
 
@@ -141,6 +139,78 @@ public class CardView extends SimpleCardView {
         this.id = cardId;
     }
 
+    public CardView(CardView cardView) {
+        super(cardView.id, cardView.expansionSetCode, cardView.cardNumber, cardView.usesVariousArt, cardView.tokenSetCode, cardView.gameObject, cardView.tokenDescriptor);
+
+        this.id = UUID.randomUUID();
+        this.parentId = cardView.parentId;
+        this.name = cardView.name;
+        this.displayName = cardView.displayName;
+        this.rules = cardView.rules;
+        this.power = cardView.power;
+        this.toughness = cardView.toughness;
+        this.loyalty = cardView.loyalty;
+        this.startingLoyalty = cardView.startingLoyalty;
+        this.cardTypes = cardView.cardTypes;
+        this.subTypes = cardView.subTypes;
+        this.superTypes = cardView.superTypes;
+        this.color = cardView.color;
+        this.frameColor = cardView.frameColor;
+        this.frameStyle = cardView.frameStyle;
+        this.manaCost = cardView.manaCost;
+        this.convertedManaCost = cardView.convertedManaCost;
+        this.rarity = cardView.rarity;
+
+        this.mageObjectType = cardView.mageObjectType;
+
+        this.isAbility = cardView.isAbility;
+        this.abilityType = cardView.abilityType;
+        this.isToken = cardView.isToken;
+
+        this.ability = null;
+        this.type = cardView.type;
+
+        this.transformable = cardView.transformable;
+        if (cardView.secondCardFace != null) {
+            this.secondCardFace = new CardView(cardView.secondCardFace);
+        } else {
+            this.secondCardFace = null;
+        }
+        this.transformed = cardView.transformed;
+
+        this.flipCard = cardView.flipCard;
+        this.faceDown = cardView.faceDown;
+
+        this.alternateName = cardView.alternateName;
+        this.originalName = cardView.originalName;
+
+        this.isSplitCard = cardView.isSplitCard;
+        this.leftSplitName = cardView.leftSplitName;
+        this.leftSplitCosts = cardView.leftSplitCosts;
+        this.leftSplitRules = null;
+        this.rightSplitName = cardView.rightSplitName;
+        this.rightSplitCosts = cardView.rightSplitCosts;
+        this.rightSplitRules = null;
+
+        this.targets = null;
+
+        this.pairedCard = cardView.pairedCard;
+        this.paid = cardView.paid;
+        this.counters = null;
+
+        this.controlledByOwner = cardView.controlledByOwner;
+
+        this.zone = cardView.zone;
+
+        this.rotate = cardView.rotate;
+        this.hideInfo = cardView.hideInfo;
+
+        this.isPlayable = cardView.isPlayable;
+        this.isChoosable = cardView.isChoosable;
+        this.selected = cardView.selected;
+        this.canAttack = cardView.canAttack;
+    }
+
     /**
      *
      * @param card
@@ -173,7 +243,7 @@ public class CardView extends SimpleCardView {
             Zone cardZone = game.getState().getZone(card.getId());
             if (card.isFaceDown(game)) {
                 showFaceUp = false;
-                if (!Zone.BATTLEFIELD.equals(cardZone)) {
+                if (Zone.BATTLEFIELD != cardZone) {
                     if (showFaceDownCard) {
                         showFaceUp = true;
                     }
@@ -281,7 +351,7 @@ public class CardView extends SimpleCardView {
         this.subTypes = card.getSubtype(game);
         this.superTypes = card.getSupertype();
         this.color = card.getColor(game);
-        this.canTransform = card.canTransform();
+        this.transformable = card.isTransformable();
         this.flipCard = card.isFlipCard();
         this.faceDown = !showFaceUp;
 
@@ -308,8 +378,9 @@ public class CardView extends SimpleCardView {
             this.isToken = false;
         }
 
-        if (card.getSecondCardFace() != null) {
-            this.secondCardFace = new CardView(card.getSecondCardFace());
+        Card secondSideCard = card.getSecondCardFace();
+        if (secondSideCard != null) {
+            this.secondCardFace = new CardView(secondSideCard);
             this.alternateName = secondCardFace.getName();
             this.originalName = card.getName();
         }
@@ -323,26 +394,28 @@ public class CardView extends SimpleCardView {
             this.mageObjectType = MageObjectType.SPELL;
             Spell spell = (Spell) card;
             for (SpellAbility spellAbility : spell.getSpellAbilities()) {
-                for (Mode mode : spellAbility.getModes().getSelectedModes()) {
-                    if (mode.getTargets().size() > 0) {
-                        setTargets(spellAbility.getTargets());
+                for (UUID modeId : spellAbility.getModes().getSelectedModes()) {
+                    Mode mode = spellAbility.getModes().get(modeId);
+                    if (!mode.getTargets().isEmpty()) {
+                        setTargets(mode.getTargets());
                     }
                 }
             }
             // show for modal spell, which mode was choosen
             if (spell.getSpellAbility().isModal()) {
-                for (Mode mode : spell.getSpellAbility().getModes().getSelectedModes()) {
+                for (UUID modeId : spell.getSpellAbility().getModes().getSelectedModes()) {
+                    Mode mode = spell.getSpellAbility().getModes().get(modeId);
                     this.rules.add("<span color='green'><i>Chosen mode: " + mode.getEffects().getText(mode) + "</i></span>");
                 }
             }
         }
-        
+
         // Frame color
         this.frameColor = card.getFrameColor(game);
 
         // Frame style
         this.frameStyle = card.getFrameStyle();
-        
+
         // Get starting loyalty
         this.startingLoyalty = "" + card.getStartingLoyalty();
     }
@@ -355,7 +428,7 @@ public class CardView extends SimpleCardView {
             this.mageObjectType = MageObjectType.PERMANENT;
             this.power = Integer.toString(object.getPower().getValue());
             this.toughness = Integer.toString(object.getToughness().getValue());
-            this.loyalty = Integer.toString(((Permanent) object).getCounters((Game)null).getCount(CounterType.LOYALTY));
+            this.loyalty = Integer.toString(((Permanent) object).getCounters((Game) null).getCount(CounterType.LOYALTY));
         } else {
             this.power = object.getPower().toString();
             this.toughness = object.getToughness().toString();
@@ -385,7 +458,7 @@ public class CardView extends SimpleCardView {
             this.rarity = Rarity.NA;
             this.rules = new ArrayList<>();
             this.rules.add(stackAbility.getRule());
-            if (stackAbility.getZone().equals(Zone.COMMAND)) {
+            if (stackAbility.getZone() == Zone.COMMAND) {
                 this.expansionSetCode = stackAbility.getExpansionSetCode();
             }
         }
@@ -415,6 +488,20 @@ public class CardView extends SimpleCardView {
         this.rarity = Rarity.COMMON;
     }
 
+    public CardView(Designation designation, StackAbility stackAbility) {
+        this(true);
+        this.gameObject = true;
+        this.id = designation.getId();
+        this.mageObjectType = MageObjectType.NULL;
+        this.name = designation.getName();
+        this.displayName = name;
+        this.rules = new ArrayList<>();
+        this.rules.add(stackAbility.getRule(designation.getName()));
+        this.frameStyle = FrameStyle.M15_NORMAL;
+        this.expansionSetCode = designation.getExpansionSetCodeForImage();
+        this.rarity = Rarity.COMMON;
+    }
+
     public CardView(boolean empty) {
         super(null, "", "0", false, "", "");
         if (!empty) {
@@ -431,7 +518,7 @@ public class CardView extends SimpleCardView {
         this.toughness = "";
         this.loyalty = "";
         this.startingLoyalty = "";
-        this.cardTypes = new ArrayList<>();
+        this.cardTypes = EnumSet.noneOf(CardType.class);
         this.subTypes = new ArrayList<>();
         this.superTypes = new ArrayList<>();
         this.color = new ObjectColor();
@@ -488,7 +575,7 @@ public class CardView extends SimpleCardView {
         this.rarity = Rarity.NA;
         this.type = token.getTokenType();
         this.tokenDescriptor = token.getTokenDescriptor();
-        this.tokenSetCode = token.getOriginalExpansionSetCode();        
+        this.tokenSetCode = token.getOriginalExpansionSetCode();
     }
 
     protected final void setTargets(Targets targets) {
@@ -547,12 +634,12 @@ public class CardView extends SimpleCardView {
     public String getLoyalty() {
         return loyalty;
     }
-    
+
     public String getStartingLoyalty() {
         return startingLoyalty;
     }
 
-    public List<CardType> getCardTypes() {
+    public Set<CardType> getCardTypes() {
         return cardTypes;
     }
 
@@ -567,7 +654,7 @@ public class CardView extends SimpleCardView {
     public ObjectColor getColor() {
         return color;
     }
-    
+
     public ObjectColor getFrameColor() {
         return frameColor;
     }
@@ -644,7 +731,7 @@ public class CardView extends SimpleCardView {
 
     @Override
     public String toString() {
-        return getName() + " [" + getId() + "]";
+        return getName() + " [" + getId() + ']';
     }
 
     public boolean isFaceDown() {
@@ -652,7 +739,7 @@ public class CardView extends SimpleCardView {
     }
 
     public boolean canTransform() {
-        return this.canTransform;
+        return this.transformable;
     }
 
     public boolean isSplitCard() {
@@ -807,4 +894,3 @@ public class CardView extends SimpleCardView {
     }
 
 }
-

@@ -46,7 +46,7 @@ public class TransformTargetEffect extends OneShotEffect {
     public boolean apply(Game game, Ability source) {
         Permanent permanent = game.getPermanent(getTargetPointer().getFirst(game, source));
         if (permanent != null) {
-            if (permanent.canTransform(game)) {
+            if (permanent.canTransform(source, game)) {
                 // check not to transform twice the same side
                 if (withoutTrigger) {
                     permanent.setTransformed(!permanent.isTransformed());
@@ -73,7 +73,7 @@ public class TransformTargetEffect extends OneShotEffect {
 
     @Override
     public String getText(Mode mode) {
-        if (staticText != null && staticText.length() > 0) {
+        if (staticText != null && !staticText.isEmpty()) {
             return staticText;
         }
         if (mode.getTargets().isEmpty()) {

@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import mage.cards.decks.Deck;
 import mage.game.Game;
@@ -121,7 +120,7 @@ public abstract class MatchImpl implements Match {
     }
 
     @Override
-    public void startMatch() throws GameException {
+    public void startMatch() {
         this.startTime = new Date();
     }
 
@@ -291,13 +290,13 @@ public abstract class MatchImpl implements Match {
         String duelingTime = "";
         if (game.hasEnded()) {
             if (game.getEndTime() != null) {
-                duelingTime = " (" + DateFormat.getDuration((game.getEndTime().getTime() - game.getStartTime().getTime()) / 1000) + ")";
+                duelingTime = " (" + DateFormat.getDuration((game.getEndTime().getTime() - game.getStartTime().getTime()) / 1000) + ')';
             }
             state = "Finished" + duelingTime;
             result = game.getWinner();
         } else {
             if (game.getStartTime() != null) {
-                duelingTime = " (" + DateFormat.getDuration((new Date().getTime() - game.getStartTime().getTime()) / 1000) + ")";
+                duelingTime = " (" + DateFormat.getDuration((new Date().getTime() - game.getStartTime().getTime()) / 1000) + ')';
             }
             state = "Dueling" + duelingTime;
             result = "";

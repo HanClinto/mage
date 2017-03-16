@@ -35,7 +35,7 @@ import mage.abilities.effects.common.BasicManaEffect;
 import mage.constants.Zone;
 import mage.game.Game;
 
-public class ActivateIfConditionManaAbility extends ManaAbility {
+public class ActivateIfConditionManaAbility extends ActivatedManaAbilityImpl {
 
     private final Condition condition;
 
@@ -74,7 +74,7 @@ public class ActivateIfConditionManaAbility extends ManaAbility {
 
     @Override
     public String getRule() {
-        return new StringBuilder(super.getRule()).append(" Activate this ability only if ").append(condition.toString()).append(".").toString();
+        return new StringBuilder(super.getRule()).append(" Activate this ability only if ").append(condition.toString()).append('.').toString();
     }
 
     @Override

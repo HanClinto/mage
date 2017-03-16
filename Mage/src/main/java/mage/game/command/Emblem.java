@@ -27,10 +27,10 @@
  */
 package mage.game.command;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+
 import mage.MageInt;
+import mage.MageObject;
 import mage.ObjectColor;
 import mage.abilities.Abilities;
 import mage.abilities.AbilitiesImpl;
@@ -38,6 +38,7 @@ import mage.abilities.Ability;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
 import mage.abilities.costs.mana.ManaCostsImpl;
+import mage.cards.Card;
 import mage.cards.FrameStyle;
 import mage.constants.CardType;
 import mage.game.Game;
@@ -49,17 +50,18 @@ import mage.util.GameLog;
  */
 public class Emblem implements CommandObject {
 
-    private static List emptyList = new ArrayList();
+    private static EnumSet<CardType> emptySet = EnumSet.noneOf(CardType.class);
+    private static List emptyList  = new ArrayList();
     private static ObjectColor emptyColor = new ObjectColor();
     private static ManaCosts emptyCost = new ManaCostsImpl();
 
-    private String name;
+    private String name = "";
     private UUID id;
     private UUID controllerId;
-    private UUID sourceId;
+    private MageObject sourceObject;
     private FrameStyle frameStyle;
     private Abilities<Ability> abilites = new AbilitiesImpl<>();
-    private String expansionSetCodeForImage = null;
+    private String expansionSetCodeForImage = "";
 
     public Emblem() {
         this.id = UUID.randomUUID();
@@ -70,8 +72,9 @@ public class Emblem implements CommandObject {
         this.name = emblem.name;
         this.frameStyle = emblem.frameStyle;
         this.controllerId = emblem.controllerId;
-        this.sourceId = emblem.sourceId;
+        this.sourceObject = emblem.sourceObject;
         this.abilites = emblem.abilites.copy();
+        this.expansionSetCodeForImage = emblem.expansionSetCodeForImage;
     }
 
     @Override
@@ -84,9 +87,29 @@ public class Emblem implements CommandObject {
         this.id = UUID.randomUUID();
     }
 
+    public void setSourceObject(MageObject sourceObject) {
+        this.sourceObject = sourceObject;
+        if (sourceObject instanceof Card) {
+            if (name.isEmpty()) {
+                name = ((Card) sourceObject).getSubtype(null).toString();
+            }
+            if (expansionSetCodeForImage.isEmpty()) {
+                expansionSetCodeForImage = ((Card) sourceObject).getExpansionSetCode();
+            }
+        }
+    }
+
+    @Override
+    public MageObject getSourceObject() {
+        return sourceObject;
+    }
+
     @Override
     public UUID getSourceId() {
-        return this.sourceId;
+        if (sourceObject != null) {
+            return sourceObject.getId();
+        }
+        return null;
     }
 
     @Override
@@ -99,10 +122,6 @@ public class Emblem implements CommandObject {
         this.abilites.setControllerId(controllerId);
     }
 
-    public void setSourceId(UUID sourceId) {
-        this.sourceId = sourceId;
-    }
-
     @Override
     public String getName() {
         return name;
@@ -110,7 +129,7 @@ public class Emblem implements CommandObject {
 
     @Override
     public String getIdName() {
-        return getName() + " [" + getId().toString().substring(0, 3) + "]";
+        return getName() + " [" + getId().toString().substring(0, 3) + ']';
     }
 
     @Override
@@ -129,8 +148,8 @@ public class Emblem implements CommandObject {
     }
 
     @Override
-    public List<CardType> getCardType() {
-        return emptyList;
+    public EnumSet<CardType> getCardType() {
+        return emptySet;
     }
 
     @Override
@@ -162,8 +181,8 @@ public class Emblem implements CommandObject {
     public ObjectColor getColor(Game game) {
         return emptyColor;
     }
-    
-    @Override 
+
+    @Override
     public ObjectColor getFrameColor(Game game) {
         return emptyColor;
     }
@@ -187,7 +206,7 @@ public class Emblem implements CommandObject {
     public MageInt getToughness() {
         return MageInt.EmptyMageInt;
     }
-    
+
     @Override
     public int getStartingLoyalty() {
         return 0;

@@ -28,6 +28,7 @@
 package mage.game.stack;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import mage.MageInt;
@@ -88,6 +89,8 @@ public class Spell extends StackObjImpl implements Card {
     private boolean faceDown;
     private boolean countered;
 
+    private boolean doneActivatingManaAbilities; // if this is true, the player is no longer allowed to pay the spell costs with activating of mana abilies
+
     public Spell(Card card, SpellAbility ability, UUID controllerId, Zone fromZone) {
         this.card = card;
         this.color = card.getColor(null).copy();
@@ -108,6 +111,7 @@ public class Spell extends StackObjImpl implements Card {
         this.controllerId = controllerId;
         this.fromZone = fromZone;
         this.countered = false;
+        this.doneActivatingManaAbilities = false;
     }
 
     public Spell(final Spell spell) {
@@ -135,6 +139,7 @@ public class Spell extends StackObjImpl implements Card {
         this.color = spell.color.copy();
         this.frameColor = spell.color.copy();
         this.frameStyle = spell.frameStyle;
+        this.doneActivatingManaAbilities = spell.doneActivatingManaAbilities;
     }
 
     public boolean activate(Game game, boolean noMana) {
@@ -157,6 +162,7 @@ public class Spell extends StackObjImpl implements Card {
                 }
             }
         }
+        setDoneActivatingManaAbilities(false); // can be activated again maybe during the resolution of the spell (e.g. Metallic Rebuke)
         return true;
     }
 
@@ -187,7 +193,7 @@ public class Spell extends StackObjImpl implements Card {
         if (controller == null) {
             return false;
         }
-        if (this.getCardType().contains(CardType.INSTANT) || this.getCardType().contains(CardType.SORCERY)) {
+        if (this.isInstant() || this.isSorcery()) {
             int index = 0;
             result = false;
             boolean legalParts = false;
@@ -210,10 +216,10 @@ public class Spell extends StackObjImpl implements Card {
             if (notTargeted || legalParts) {
                 for (SpellAbility spellAbility : this.spellAbilities) {
                     if (spellAbilityHasLegalParts(spellAbility, game)) {
-                        for (Mode mode : spellAbility.getModes().getSelectedModes()) {
-                            spellAbility.getModes().setActiveMode(mode);
-                            if (mode.getTargets().stillLegal(spellAbility, game)) {
-                                if (!spellAbility.getSpellAbilityType().equals(SpellAbilityType.SPLICE)) {
+                        for (UUID modeId : spellAbility.getModes().getSelectedModes()) {
+                            spellAbility.getModes().setActiveMode(modeId);
+                            if (spellAbility.getTargets().stillLegal(spellAbility, game)) {
+                                if (spellAbility.getSpellAbilityType() != SpellAbilityType.SPLICE) {
                                     updateOptionalCosts(index);
                                 }
                                 result |= spellAbility.resolve(game);
@@ -235,7 +241,7 @@ public class Spell extends StackObjImpl implements Card {
             }
             counter(null, game);
             return false;
-        } else if (this.getCardType().contains(CardType.ENCHANTMENT) && this.getSubtype(game).contains("Aura")) {
+        } else if (this.isEnchantment() && this.getSubtype(game).contains("Aura")) {
             if (ability.getTargets().stillLegal(ability, game)) {
                 updateOptionalCosts(0);
                 boolean bestow = ability instanceof BestowAbility;
@@ -252,8 +258,8 @@ public class Spell extends StackObjImpl implements Card {
                         Permanent permanent = game.getPermanent(card.getId());
                         if (permanent != null && permanent instanceof PermanentCard) {
                             permanent.setSpellAbility(ability); // otherwise spell ability without bestow will be set
-                            ((PermanentCard) permanent).getCard().getCardType().add(CardType.CREATURE);
-                            ((PermanentCard) permanent).getCard().getSubtype(game).remove("Aura");
+                            card.getCardType().add(CardType.CREATURE);
+                            card.getSubtype(game).remove("Aura");
                         }
                     }
                     return ability.resolve(game);
@@ -266,7 +272,15 @@ public class Spell extends StackObjImpl implements Card {
             // Aura has no legal target and its a bestow enchantment -> Add it to battlefield as creature
             if (this.getSpellAbility() instanceof BestowAbility) {
                 updateOptionalCosts(0);
-                return controller.moveCards(card, Zone.BATTLEFIELD, ability, game, false, faceDown, false, null);
+                if (controller.moveCards(card, Zone.BATTLEFIELD, ability, game, false, faceDown, false, null)) {
+                    Permanent permanent = game.getPermanent(card.getId());
+                    if (permanent != null && permanent instanceof PermanentCard) {
+                        ((PermanentCard) permanent).getCard().getCardType().add(CardType.CREATURE);
+                        ((PermanentCard) permanent).getCard().getSubtype(game).remove("Aura");
+                        return true;
+                    }
+                }
+                return false;
             } else {
                 //20091005 - 608.2b
                 if (!game.isSimulation()) {
@@ -283,7 +297,8 @@ public class Spell extends StackObjImpl implements Card {
 
     private boolean hasTargets(SpellAbility spellAbility, Game game) {
         if (spellAbility.getModes().getSelectedModes().size() > 1) {
-            for (Mode mode : spellAbility.getModes().getSelectedModes()) {
+            for (UUID modeId : spellAbility.getModes().getSelectedModes()) {
+                Mode mode = spellAbility.getModes().get(modeId);
                 if (!mode.getTargets().isEmpty()) {
                     return true;
                 }
@@ -299,8 +314,9 @@ public class Spell extends StackObjImpl implements Card {
         if (spellAbility.getModes().getSelectedModes().size() > 1) {
             boolean targetedMode = false;
             boolean legalTargetedMode = false;
-            for (Mode mode : spellAbility.getModes().getSelectedModes()) {
-                if (mode.getTargets().size() > 0) {
+            for (UUID modeId : spellAbility.getModes().getSelectedModes()) {
+                Mode mode = spellAbility.getModes().get(modeId);
+                if (!mode.getTargets().isEmpty()) {
                     targetedMode = true;
                     if (mode.getTargets().stillLegal(spellAbility, game)) {
                         legalTargetedMode = true;
@@ -377,8 +393,17 @@ public class Spell extends StackObjImpl implements Card {
                 }
             }
         } else {
-            card.removeFromZone(game, Zone.STACK, sourceId);
+            // Copied spell, only remove from stack
+            game.getStack().remove(this);
         }
+    }
+
+    public boolean isDoneActivatingManaAbilities() {
+        return doneActivatingManaAbilities;
+    }
+
+    public void setDoneActivatingManaAbilities(boolean doneActivatingManaAbilities) {
+        this.doneActivatingManaAbilities = doneActivatingManaAbilities;
     }
 
     @Override
@@ -404,11 +429,18 @@ public class Spell extends StackObjImpl implements Card {
         } else {
             idName = getId().toString().substring(0, 3);
         }
-        return getName() + " [" + idName + "]";
+        return getName() + " [" + idName + ']';
     }
 
     @Override
     public String getLogName() {
+        if (faceDown) {
+            if (this.isCreature()) {
+                return "face down creature spell";
+            } else {
+                return "face down spell";
+            }
+        }
         return GameLog.getColoredObjectIdName(card);
     }
 
@@ -427,14 +459,14 @@ public class Spell extends StackObjImpl implements Card {
     }
 
     @Override
-    public List<CardType> getCardType() {
-        if (this.getSpellAbility().getSpellAbilityType().equals(SpellAbilityType.FACE_DOWN_CREATURE)) {
-            List<CardType> cardTypes = new ArrayList<>();
+    public EnumSet<CardType> getCardType() {
+        if (faceDown) {
+            EnumSet<CardType> cardTypes = EnumSet.noneOf(CardType.class);
             cardTypes.add(CardType.CREATURE);
             return cardTypes;
         }
         if (this.getSpellAbility() instanceof BestowAbility) {
-            List<CardType> cardTypes = new ArrayList<>();
+            EnumSet<CardType> cardTypes = EnumSet.noneOf(CardType.class);
             cardTypes.addAll(card.getCardType());
             cardTypes.remove(CardType.CREATURE);
             return cardTypes;
@@ -525,7 +557,7 @@ public class Spell extends StackObjImpl implements Card {
             return 0;
         }
         for (SpellAbility spellAbility : spellAbilities) {
-            cmc += spellAbility.getConvertedXManaCost();
+            cmc += spellAbility.getConvertedXManaCost(getCard());
         }
         cmc += getCard().getManaCost().convertedManaCost();
         return cmc;
@@ -643,7 +675,7 @@ public class Spell extends StackObjImpl implements Card {
     }
 
     @Override
-    public boolean canTransform() {
+    public boolean isTransformable() {
         return false;
     }
 
@@ -802,6 +834,11 @@ public class Spell extends StackObjImpl implements Card {
     }
 
     @Override
+    public void setTransformable(boolean value) {
+        throw new UnsupportedOperationException("Unsupported operation");
+    }
+
+    @Override
     public int getZoneChangeCounter(Game game) {
         return card.getZoneChangeCounter(game);
     }
@@ -834,10 +871,6 @@ public class Spell extends StackObjImpl implements Card {
     }
 
     @Override
-    public void build() {
-    }
-
-    @Override
     public Counters getCounters(Game game) {
         return card.getCounters(game);
     }
@@ -848,13 +881,13 @@ public class Spell extends StackObjImpl implements Card {
     }
 
     @Override
-    public boolean addCounters(Counter counter, Game game) {
-        return card.addCounters(counter, game);
+    public boolean addCounters(Counter counter, Ability source, Game game) {
+        return card.addCounters(counter, source, game);
     }
 
     @Override
-    public boolean addCounters(Counter counter, Game game, ArrayList<UUID> appliedEffects) {
-        return card.addCounters(counter, game, appliedEffects);
+    public boolean addCounters(Counter counter, Ability source, Game game, ArrayList<UUID> appliedEffects) {
+        return card.addCounters(counter, source, game, appliedEffects);
     }
 
     @Override
@@ -892,7 +925,7 @@ public class Spell extends StackObjImpl implements Card {
 
     @Override
     public void checkForCountersToAdd(Permanent permanent, Game game) {
-        throw new UnsupportedOperationException("Not supported for Spell");
+        card.checkForCountersToAdd(permanent, game);
     }
 
     @Override

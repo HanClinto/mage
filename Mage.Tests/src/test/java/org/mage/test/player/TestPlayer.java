@@ -48,7 +48,7 @@ import mage.abilities.costs.Costs;
 import mage.abilities.costs.VariableCost;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
-import mage.abilities.mana.ManaAbility;
+import mage.abilities.mana.ActivatedManaAbilityImpl;
 import mage.abilities.mana.ManaOptions;
 import mage.cards.Card;
 import mage.cards.Cards;
@@ -175,7 +175,7 @@ public class TestPlayer implements Player {
 
     protected Permanent findPermanent(FilterPermanent filter, UUID controllerId, Game game) {
         List<Permanent> permanents = game.getBattlefield().getAllActivePermanents(filter, controllerId, game);
-        if (permanents.size() > 0) {
+        if (!permanents.isEmpty()) {
             return permanents.get(0);
         }
         return null;
@@ -190,6 +190,16 @@ public class TestPlayer implements Player {
                 }
             }
             return false;
+        } else if (groups[2].startsWith("spellCopyOnStack=")) {
+            String spellOnStack = groups[2].substring(17);
+            for (StackObject stackObject : game.getStack()) {
+                if (stackObject.getStackAbility().toString().contains(spellOnStack)) {
+                    if (stackObject.isCopy()) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         } else if (groups[2].startsWith("!spellOnStack=")) {
             String spellNotOnStack = groups[2].substring(14);
             for (StackObject stackObject : game.getStack()) {
@@ -200,7 +210,7 @@ public class TestPlayer implements Player {
             return true;
         } else if (groups[2].startsWith("spellOnTopOfStack=")) {
             String spellOnTopOFStack = groups[2].substring(18);
-            if (game.getStack().size() > 0) {
+            if (!game.getStack().isEmpty()) {
                 StackObject stackObject = game.getStack().getFirst();
                 if (stackObject != null && stackObject.getStackAbility().toString().contains(spellOnTopOFStack)) {
                     return true;
@@ -223,7 +233,7 @@ public class TestPlayer implements Player {
         boolean result = true;
         for (int i = 1; i < groupsForTargetHandling.length; i++) {
             String group = groupsForTargetHandling[i];
-            if (group.startsWith("spellOnStack") || group.startsWith("spellOnTopOfStack") || group.startsWith("!spellOnStack") || group.startsWith("target=null") || group.startsWith("manaInPool=")) {
+            if (group.startsWith("spell") || group.startsWith("!spell") || group.startsWith("target=null") || group.startsWith("manaInPool=")) {
                 break;
             }
             if (ability instanceof SpellAbility && ((SpellAbility) ability).getSpellAbilityType().equals(SpellAbilityType.SPLIT_FUSED)) {
@@ -282,18 +292,14 @@ public class TestPlayer implements Player {
             Mode selectedMode = null;
             if (targetName.startsWith("mode=")) {
                 int modeNr = Integer.parseInt(targetName.substring(5, 6));
-                if (modeNr == 0 || modeNr > ability.getModes().size()) {
+                if (modeNr == 0 || modeNr > (ability.getModes().isEachModeMoreThanOnce() ? ability.getModes().getSelectedModes().size() : ability.getModes().size())) {
                     throw new UnsupportedOperationException("Given mode number (" + modeNr + ") not available for " + ability.toString());
                 }
                 UUID modeId = ability.getModes().getModeId(modeNr);
-
-                for (Mode mode : ability.getModes().getSelectedModes()) {
-                    if (mode.getId().equals(modeId)) {
-                        selectedMode = mode;
-                        ability.getModes().setActiveMode(mode);
-                        index = 0; // reset target index if mode changes
-                        break;
-                    }
+                selectedMode = ability.getModes().get(modeId);
+                if (modeId != ability.getModes().getMode().getId()) {
+                    ability.getModes().setActiveMode(modeId);
+                    index = 0; // reset target index if mode changes
                 }
                 targetName = targetName.substring(6);
             } else {
@@ -418,7 +424,7 @@ public class TestPlayer implements Player {
 
                     for (MageObject mageObject : manaObjects) {
                         if (mageObject instanceof Permanent) {
-                            for (Ability manaAbility : ((Permanent) mageObject).getAbilities(game).getAvailableManaAbilities(Zone.BATTLEFIELD, game)) {
+                            for (Ability manaAbility : ((Permanent) mageObject).getAbilities(game).getAvailableActivatedManaAbilities(Zone.BATTLEFIELD, game)) {
                                 if (manaAbility.toString().startsWith(groups[0])) {
                                     Ability newManaAbility = manaAbility.copy();
                                     computerPlayer.activateAbility((ActivatedAbility) newManaAbility, game);
@@ -427,7 +433,7 @@ public class TestPlayer implements Player {
                                 }
                             }
                         } else if (mageObject instanceof Card) {
-                            for (Ability manaAbility : ((Card) mageObject).getAbilities(game).getAvailableManaAbilities(game.getState().getZone(mageObject.getId()), game)) {
+                            for (Ability manaAbility : ((Card) mageObject).getAbilities(game).getAvailableActivatedManaAbilities(game.getState().getZone(mageObject.getId()), game)) {
                                 if (manaAbility.toString().startsWith(groups[0])) {
                                     Ability newManaAbility = manaAbility.copy();
                                     computerPlayer.activateAbility((ActivatedAbility) newManaAbility, game);
@@ -436,7 +442,7 @@ public class TestPlayer implements Player {
                                 }
                             }
                         } else {
-                            for (Ability manaAbility : mageObject.getAbilities().getAvailableManaAbilities(game.getState().getZone(mageObject.getId()), game)) {
+                            for (Ability manaAbility : mageObject.getAbilities().getAvailableActivatedManaAbilities(game.getState().getZone(mageObject.getId()), game)) {
                                 if (manaAbility.toString().startsWith(groups[0])) {
                                     Ability newManaAbility = manaAbility.copy();
                                     computerPlayer.activateAbility((ActivatedAbility) newManaAbility, game);
@@ -448,7 +454,7 @@ public class TestPlayer implements Player {
                     }
                     List<Permanent> manaPermsWithCost = computerPlayer.getAvailableManaProducersWithCost(game);
                     for (Permanent perm : manaPermsWithCost) {
-                        for (ManaAbility manaAbility : perm.getAbilities().getAvailableManaAbilities(Zone.BATTLEFIELD, game)) {
+                        for (ActivatedManaAbilityImpl manaAbility : perm.getAbilities().getAvailableActivatedManaAbilities(Zone.BATTLEFIELD, game)) {
                             if (manaAbility.toString().startsWith(groups[0]) && manaAbility.canActivate(computerPlayer.getId(), game)) {
                                 Ability newManaAbility = manaAbility.copy();
                                 computerPlayer.activateAbility((ActivatedAbility) newManaAbility, game);
@@ -464,7 +470,7 @@ public class TestPlayer implements Player {
                     for (Permanent permanent : game.getBattlefield().getAllActivePermanents()) {
                         if (permanent.getName().equals(groups[0])) {
                             Counter counter = new Counter(groups[1], Integer.parseInt(groups[2]));
-                            permanent.addCounters(counter, game);
+                            permanent.addCounters(counter, null, game);
                             break;
                         }
                     }
@@ -495,7 +501,7 @@ public class TestPlayer implements Player {
         if (numberOfActions == actions.size()) {
             foundNoAction++;
             if (foundNoAction > maxCallsWithoutAction) {
-                throw new AssertionError("More priority calls to " + getName() + " and doing no action than allowed (" + maxCallsWithoutAction + ")");
+                throw new AssertionError("More priority calls to " + getName() + " and doing no action than allowed (" + maxCallsWithoutAction + ')');
             }
         } else {
             foundNoAction = 0;
@@ -675,7 +681,7 @@ public class TestPlayer implements Player {
                                         break;
                                     }
                                 }
-                            } else if ((permanent.getName() + "-" + permanent.getExpansionSetCode()).equals(targetName)) {
+                            } else if ((permanent.getName() + '-' + permanent.getExpansionSetCode()).equals(targetName)) {
                                 if (target.isNotTarget() || ((TargetPermanent) target).canTarget(computerPlayer.getId(), permanent.getId(), source, game)) {
                                     if ((permanent.isCopy() && !originOnly) || (!permanent.isCopy() && !copyOnly)) {
                                         target.add(permanent.getId(), game);
@@ -820,7 +826,7 @@ public class TestPlayer implements Player {
                             filter = ((FilterCreatureOrPlayer) filter).getCreatureFilter();
                         }
                         for (Permanent permanent : game.getBattlefield().getAllActivePermanents((FilterPermanent) filter, game)) {
-                            if (permanent.getName().equals(targetName) || (permanent.getName() + "-" + permanent.getExpansionSetCode()).equals(targetName)) {
+                            if (permanent.getName().equals(targetName) || (permanent.getName() + '-' + permanent.getExpansionSetCode()).equals(targetName)) {
                                 if (target.canTarget(abilityControllerId, permanent.getId(), source, game) && !target.getTargets().contains(permanent.getId())) {
                                     if ((permanent.isCopy() && !originOnly) || (!permanent.isCopy() && !copyOnly)) {
                                         target.add(permanent.getId(), game);
@@ -845,7 +851,7 @@ public class TestPlayer implements Player {
                     boolean targetFound = false;
                     for (String targetName : targetList) {
                         for (Card card : computerPlayer.getHand().getCards(((TargetCardInHand) target).getFilter(), game)) {
-                            if (card.getName().equals(targetName) || (card.getName() + "-" + card.getExpansionSetCode()).equals(targetName)) {
+                            if (card.getName().equals(targetName) || (card.getName() + '-' + card.getExpansionSetCode()).equals(targetName)) {
                                 if (((TargetCardInHand) target).canTarget(abilityControllerId, card.getId(), source, game) && !target.getTargets().contains(card.getId())) {
                                     target.add(card.getId(), game);
                                     targetFound = true;
@@ -867,7 +873,7 @@ public class TestPlayer implements Player {
                     boolean targetFound = false;
                     for (String targetName : targetList) {
                         for (Card card : computerPlayer.getGraveyard().getCards(((TargetCardInYourGraveyard) target).getFilter(), game)) {
-                            if (card.getName().equals(targetName) || (card.getName() + "-" + card.getExpansionSetCode()).equals(targetName)) {
+                            if (card.getName().equals(targetName) || (card.getName() + '-' + card.getExpansionSetCode()).equals(targetName)) {
                                 if (((TargetCardInYourGraveyard) target).canTarget(abilityControllerId, card.getId(), source, game) && !target.getTargets().contains(card.getId())) {
                                     target.add(card.getId(), game);
                                     targetFound = true;
@@ -894,7 +900,7 @@ public class TestPlayer implements Player {
                             if (computerPlayer.hasOpponent(opponentId, game)) {
                                 Player opponent = game.getPlayer(opponentId);
                                 for (Card card : opponent.getGraveyard().getCards(((TargetCardInOpponentsGraveyard) target).getFilter(), game)) {
-                                    if (card.getName().equals(targetName) || (card.getName() + "-" + card.getExpansionSetCode()).equals(targetName)) {
+                                    if (card.getName().equals(targetName) || (card.getName() + '-' + card.getExpansionSetCode()).equals(targetName)) {
                                         if (((TargetCardInOpponentsGraveyard) target).canTarget(abilityControllerId, card.getId(), source, game) && !target.getTargets().contains(card.getId())) {
                                             target.add(card.getId(), game);
                                             targetFound = true;
@@ -1438,8 +1444,8 @@ public class TestPlayer implements Player {
     }
 
     @Override
-    public int loseLife(int amount, Game game) {
-        return computerPlayer.loseLife(amount, game);
+    public int loseLife(int amount, Game game, boolean atCombat) {
+        return computerPlayer.loseLife(amount, game, atCombat);
     }
 
     @Override
@@ -1872,13 +1878,13 @@ public class TestPlayer implements Player {
     }
 
     @Override
-    public void setCommanderId(UUID commanderId) {
-        computerPlayer.setCommanderId(commanderId);
+    public void addCommanderId(UUID commanderId) {
+        computerPlayer.addCommanderId(commanderId);
     }
 
     @Override
-    public UUID getCommanderId() {
-        return computerPlayer.getCommanderId();
+    public Set<UUID> getCommandersIds() {
+        return computerPlayer.getCommandersIds();
     }
 
     @Override

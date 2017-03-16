@@ -32,7 +32,6 @@ import javax.swing.BorderFactory;
 import javax.swing.border.Border;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public final class Constants {
@@ -96,12 +95,12 @@ public final class Constants {
     }
 
     public enum SortBy {
-
+        CARD_TYPE("Card Type"),
         CASTING_COST("Casting Cost"),
-        RARITY("Rarity"),
         COLOR("Color"),
         COLOR_IDENTITY("Color Identity"),
         NAME("Name"),
+        RARITY("Rarity"),
         UNSORTED("Unsorted");
 
         private final String text;
@@ -116,20 +115,12 @@ public final class Constants {
         }
 
         public static SortBy getByString(String text) {
-            switch (text) {
-                case "Casting Cost":
-                    return CASTING_COST;
-                case "Rarity":
-                    return RARITY;
-                case "Color":
-                    return COLOR;
-                case "Color Identity":
-                    return COLOR_IDENTITY;
-                case "Name":
-                    return NAME;
-                default:
-                    return UNSORTED;
+            for (SortBy sortBy : values()) {
+                if (sortBy.text.equals(text)) {
+                    return sortBy;
+                }
             }
+            return UNSORTED;
         }
 
     }

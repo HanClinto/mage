@@ -89,7 +89,7 @@ public class PutOnLibraryTargetEffect extends OneShotEffect {
                         break;
                     case GRAVEYARD:
                         Card card = game.getCard(targetId);
-                        if (card != null && game.getState().getZone(targetId).equals(Zone.GRAVEYARD)) {
+                        if (card != null && game.getState().getZone(targetId) == Zone.GRAVEYARD) {
                             cards.add(card);
                         }
                         break;
@@ -149,13 +149,13 @@ public class PutOnLibraryTargetEffect extends OneShotEffect {
         StringBuilder sb = new StringBuilder();
         Target target = mode.getTargets().get(0);
         sb.append("put ");
-        if (target.getMaxNumberOfTargets() == 0) {
+        if (target.getMaxNumberOfTargets() == 0 || target.getMaxNumberOfTargets() == Integer.MAX_VALUE) {
             sb.append("any number of ");
         } else if (target.getMaxNumberOfTargets() != 1 || target.getNumberOfTargets() != 1) {
             if (target.getMaxNumberOfTargets() > target.getNumberOfTargets()) {
                 sb.append("up to ");
             }
-            sb.append(CardUtil.numberToText(target.getMaxNumberOfTargets())).append(" ");
+            sb.append(CardUtil.numberToText(target.getMaxNumberOfTargets())).append(' ');
         }
         sb.append("target ").append(mode.getTargets().get(0).getTargetName()).append(" on ");
         sb.append(onTop ? "top" : "the bottom").append(" of its owner's library");

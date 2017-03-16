@@ -77,26 +77,19 @@ public class BoosterGenerationTest extends MageTestBase {
                 sb.append(", ");
             }
         }
-        sb.append("] (").append(cards.size()).append(")");
+        sb.append("] (").append(cards.size()).append(')');
         return sb.toString();
     }
 
     private static boolean contains(List<Card> cards, List<String> names, String code) {
-        for (String name : names) {
-            if (contains(cards, name, code)) {
-                return true;
-            }
-        }
-        return false;
+        return names.stream().anyMatch((name) -> (contains(cards, name, code)));
     }
 
     private static boolean contains(List<Card> cards, String name, String code) {
-        for (Card card : cards) {
-            if (card.getName().equals(name) && (code == null || card.getExpansionSetCode().equals(code))) {
-                return true;
-            }
-        }
-        return false;
+        return cards.stream().anyMatch((card)
+                -> (card.getName().equals(name)
+                && (code == null || card.getExpansionSetCode().equals(code)))
+        );
     }
 
 }

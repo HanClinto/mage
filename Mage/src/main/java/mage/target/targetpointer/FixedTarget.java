@@ -1,13 +1,15 @@
 package mage.target.targetpointer;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import mage.abilities.Ability;
 import mage.cards.Card;
 import mage.constants.Zone;
 import mage.game.Game;
 import mage.game.permanent.Permanent;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 public class FixedTarget implements TargetPointer {
 
@@ -41,6 +43,18 @@ public class FixedTarget implements TargetPointer {
         this.zoneChangeCounter = zoneChangeCounter;
     }
 
+    /**
+     * Use this to set the target to exactly the zone the target is currently in
+     *
+     * @param targetId
+     * @param game
+     */
+    public FixedTarget(UUID targetId, Game game) {
+        this.targetId = targetId;
+        this.initialized = true;
+        this.zoneChangeCounter = game.getState().getZoneChangeCounter(targetId);
+    }
+
     public FixedTarget(final FixedTarget fixedTarget) {
         this.targetId = fixedTarget.targetId;
         this.zoneChangeCounter = fixedTarget.zoneChangeCounter;
@@ -64,7 +78,7 @@ public class FixedTarget implements TargetPointer {
         if (this.zoneChangeCounter > 0) { // will be zero if not defined in init
             Card card = game.getCard(targetId);
             if (card != null && card.getZoneChangeCounter(game) != this.zoneChangeCounter) {
-                return new ArrayList<>(); // return empty
+                return Collections.emptyList(); // return empty
             }
         }
 

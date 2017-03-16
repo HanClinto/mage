@@ -71,15 +71,14 @@ public class ProliferateEffect extends OneShotEffect {
         options.put("UI.right.btn.text", "Done");
         controller.choose(Outcome.Benefit, target, source.getSourceId(), game, options);
 
-        for (int idx = 0; idx < target.getTargets().size(); idx++) {
-            UUID chosen = (UUID) target.getTargets().get(idx);
+        for (UUID chosen : target.getTargets()) {
             Permanent permanent = game.getPermanent(chosen);
             if (permanent != null) {
-                if (permanent.getCounters(game).size() > 0) {
+                if (!permanent.getCounters(game).isEmpty()) {
                     if (permanent.getCounters(game).size() == 1) {
                         for (Counter counter : permanent.getCounters(game).values()) {
                             Counter newCounter = new Counter(counter.getName());
-                            permanent.addCounters(newCounter, game);
+                            permanent.addCounters(newCounter, source, game);
                         }
                     } else {
                         Choice choice = new ChoiceImpl(true);
@@ -88,12 +87,12 @@ public class ProliferateEffect extends OneShotEffect {
                             choices.add(counter.getName());
                         }
                         choice.setChoices(choices);
-                        choice.setMessage("Choose a counter to proliferate (" + permanent.getIdName() + ")");
+                        choice.setMessage("Choose a counter to proliferate (" + permanent.getIdName() + ')');
                         controller.choose(Outcome.Benefit, choice, game);
                         for (Counter counter : permanent.getCounters(game).values()) {
                             if (counter.getName().equals(choice.getChoice())) {
                                 Counter newCounter = new Counter(counter.getName());
-                                permanent.addCounters(newCounter, game);
+                                permanent.addCounters(newCounter, source, game);
                                 break;
                             }
                         }
@@ -102,7 +101,7 @@ public class ProliferateEffect extends OneShotEffect {
             } else {
                 Player player = game.getPlayer(chosen);
                 if (player != null) {
-                    if (player.getCounters().size() > 0) {
+                    if (!player.getCounters().isEmpty()) {
                         if (player.getCounters().size() == 1) {
                             for (Counter counter : player.getCounters().values()) {
                                 Counter newCounter = new Counter(counter.getName());
@@ -115,7 +114,7 @@ public class ProliferateEffect extends OneShotEffect {
                                 choices.add(counter.getName());
                             }
                             choice.setChoices(choices);
-                            choice.setMessage("Choose a counter to proliferate (" + player.getLogName() + ")");
+                            choice.setMessage("Choose a counter to proliferate (" + player.getLogName() + ')');
                             controller.choose(Outcome.Benefit, choice, game);
                             for (Counter counter : player.getCounters().values()) {
                                 if (counter.getName().equals(choice.getChoice())) {

@@ -27,10 +27,7 @@
  */
 package mage.server;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
@@ -42,6 +39,8 @@ import mage.players.net.UserData;
 import mage.players.net.UserGroup;
 import mage.server.game.GamesRoomManager;
 import mage.server.util.ConfigSettings;
+import mage.server.util.SystemUtil;
+import mage.util.RandomUtil;
 import org.apache.log4j.Logger;
 import org.jboss.remoting.callback.AsynchInvokerCallbackHandler;
 import org.jboss.remoting.callback.Callback;
@@ -88,6 +87,9 @@ public class Session {
                 sendErrorMessageToClient(returnMessage);
                 return returnMessage;
             }
+
+            RandomString randomString = new RandomString(10);
+            password = randomString.nextString();
             returnMessage = validatePassword(password, userName);
             if (returnMessage != null) {
                 sendErrorMessageToClient(returnMessage);
@@ -99,18 +101,29 @@ public class Session {
                 return returnMessage;
             }
             AuthorizedUserRepository.instance.add(userName, password, email);
-            String subject = "XMage Registration Completed";
-            String text = "You are successfully registered as " + userName + ".";
+            String text = "You are successfully registered as " + userName + '.';
+            text += "  Your initial, generated password is: " + password;
+
             boolean success;
+            String subject = "XMage Registration Completed";
             if (!ConfigSettings.getInstance().getMailUser().isEmpty()) {
                 success = MailClient.sendMessage(email, subject, text);
             } else {
                 success = MailgunClient.sendMessage(email, subject, text);
             }
             if (success) {
-                logger.info("Sent a registration confirmation email to " + email + " for " + userName);
+                String ok = "Sent a registration confirmation / initial password email to " + email + " for " + userName;
+                logger.info(ok);
+                sendInfoMessageToClient(ok);
+            } else if (Main.isTestMode()) {
+                String ok = "Server is in test mode.  Your account is registered with a password of " + password + " for " + userName;
+                logger.info(ok);
+                sendInfoMessageToClient(ok);
             } else {
-                logger.error("Failed sending a registration confirmation email to " + email + " for " + userName);
+                String err = "Failed sending a registration confirmation / initial password email to " + email + " for " + userName;
+                logger.error(err);
+                sendErrorMessageToClient(err);
+                return err;
             }
             return null;
         }
@@ -159,6 +172,10 @@ public class Session {
     }
 
     static private String validateEmail(String email) {
+
+        if (email == null || email.isEmpty()) {
+            return "Email address cannot be blank";
+        }
         AuthorizedUser authorizedUser = AuthorizedUserRepository.instance.getByEmail(email);
         if (authorizedUser != null) {
             return "Email address '" + email + "' is associated with another user";
@@ -180,14 +197,33 @@ public class Session {
 
     public String connectUserHandling(String userName, String password) throws MageException {
         this.isAdmin = false;
+        AuthorizedUser authorizedUser = null;
         if (ConfigSettings.getInstance().isAuthenticationActivated()) {
-            AuthorizedUser authorizedUser = AuthorizedUserRepository.instance.getByName(userName);
-            if (authorizedUser == null || !authorizedUser.doCredentialsMatch(userName, password)) {
-                return "Wrong username or password. In case you haven't, please register your account first.";
+            authorizedUser = AuthorizedUserRepository.instance.getByName(userName);
+            String errorMsg = "Wrong username or password. In case you haven't, please register your account first.";
+            if (authorizedUser == null) {
+                return errorMsg;
+            }
+
+            if (!Main.isTestMode() && !authorizedUser.doCredentialsMatch(userName, password)) {
+                return errorMsg;
+            }
+
+            if (!authorizedUser.active) {
+                return "Your profile is deactivated, you can't sign on.";
+            }
+            if (authorizedUser.lockedUntil != null) {
+                if (authorizedUser.lockedUntil.compareTo(Calendar.getInstance().getTime()) > 0) {
+                    return "Your profile is deactivated until " + SystemUtil.dateFormat.format(authorizedUser.lockedUntil);
+                } else {
+                    User user = UserManager.getInstance().createUser(userName, host, authorizedUser);
+                    if (user != null && authorizedUser.lockedUntil != null) {
+                        user.setLockedUntil(null);
+                    }
+                }
             }
         }
-
-        User user = UserManager.getInstance().createUser(userName, host);
+        User user = UserManager.getInstance().createUser(userName, host, authorizedUser);
         boolean reconnect = false;
         if (user == null) {  // user already exists
             user = UserManager.getInstance().getUserByName(userName);
@@ -223,7 +259,7 @@ public class Session {
 
     public void connectAdmin() {
         this.isAdmin = true;
-        User user = UserManager.getInstance().createUser("Admin", host);
+        User user = UserManager.getInstance().createUser("Admin", host, null);
         if (user == null) {
             user = UserManager.getInstance().getUserByName("Admin");
         }
@@ -236,9 +272,13 @@ public class Session {
         this.userId = user.getId();
     }
 
-    public boolean setUserData(String userName, UserData userData) {
+    public boolean setUserData(String userName, UserData userData, String clientVersion, String userIdStr) {
         User user = UserManager.getInstance().getUserByName(userName);
         if (user != null) {
+            if (clientVersion != null) {
+                user.setClientVersion(clientVersion);
+            }
+            user.setUserIdStr(userIdStr);
             if (user.getUserData() == null || user.getUserData().getGroupId() == UserGroup.DEFAULT.getGroupId()) {
                 user.setUserData(userData);
             } else {
@@ -284,11 +324,15 @@ public class Session {
                 lockSet = true;
                 logger.debug("SESSION LOCK SET sessionId: " + sessionId);
             } else {
-                logger.error("CAN'T GET LOCK - userId: " + userId);
+                logger.error("CAN'T GET LOCK - userId: " + userId + " hold count: " + lock.getHoldCount());
             }
-            User user = UserManager.getInstance().getUser(userId);
-            if (user == null || !user.isConnected()) {
+            Optional<User> _user = UserManager.getInstance().getUser(userId);
+            if (!_user.isPresent()) {
                 return; //user was already disconnected by other thread
+            }
+            User user = _user.get();
+            if(!user.isConnected()){
+                return;
             }
             if (!user.getSessionId().equals(sessionId)) {
                 // user already reconnected with another instance
@@ -336,12 +380,14 @@ public class Session {
             call.setMessageId(messageId++);
             callbackHandler.handleCallbackOneway(new Callback(call));
         } catch (HandleCallbackException ex) {
-            User user = UserManager.getInstance().getUser(userId);
-            logger.warn("SESSION CALLBACK EXCEPTION - " + (user != null ? user.getName() : "") + " userId " + userId);
-            logger.warn(" - method: " + call.getMethod());
-            logger.warn(" - cause: " + getBasicCause(ex).toString());
-            logger.trace("Stack trace:", ex);
-            userLostConnection();
+            ex.printStackTrace();
+            UserManager.getInstance().getUser(userId).ifPresent(user-> {
+                logger.warn("SESSION CALLBACK EXCEPTION - " + user.getName() + " userId " + userId);
+                logger.warn(" - method: " + call.getMethod());
+                logger.warn(" - cause: " + getBasicCause(ex).toString());
+                logger.trace("Stack trace:", ex);
+                userLostConnection();
+            });
         }
     }
 
@@ -372,14 +418,53 @@ public class Session {
         fireCallback(new ClientCallback("showUserMessage", null, messageData));
     }
 
+    public void sendInfoMessageToClient(String message) {
+        List<String> messageData = new LinkedList<>();
+        messageData.add("Information about connecting to the server");
+        messageData.add(message);
+        fireCallback(new ClientCallback("showUserMessage", null, messageData));
+    }
+
     public static Throwable getBasicCause(Throwable cause) {
         Throwable t = cause;
         while (t.getCause() != null) {
             t = t.getCause();
-            if (t == cause) {
+            if (Objects.equals(t, cause)) {
                 throw new IllegalArgumentException("Infinite cycle detected in causal chain");
             }
         }
         return t;
+    }
+}
+
+class RandomString {
+
+    private static final char[] symbols;
+
+    static {
+        StringBuilder tmp = new StringBuilder();
+        for (char ch = '0'; ch <= '9'; ++ch) {
+            tmp.append(ch);
+        }
+        for (char ch = 'a'; ch <= 'z'; ++ch) {
+            tmp.append(ch);
+        }
+        symbols = tmp.toString().toCharArray();
+    }
+
+    private final char[] buf;
+
+    public RandomString(int length) {
+        if (length < 8) {
+            length = 8;
+        }
+        buf = new char[length];
+    }
+
+    public String nextString() {
+        for (int idx = 0; idx < buf.length; ++idx) {
+            buf[idx] = symbols[RandomUtil.nextInt(symbols.length)];
+        }
+        return new String(buf);
     }
 }

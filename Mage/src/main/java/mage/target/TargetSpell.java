@@ -43,7 +43,8 @@ import mage.game.stack.StackObject;
  */
 public class TargetSpell extends TargetObject {
 
-    protected FilterSpell filter;
+    protected final FilterSpell filter;
+    private final Set<UUID> sourceIds = new HashSet<>();
 
     public TargetSpell() {
         this(1, 1, new FilterSpell());
@@ -68,6 +69,7 @@ public class TargetSpell extends TargetObject {
     public TargetSpell(final TargetSpell target) {
         super(target);
         this.filter = target.filter.copy();
+        this.sourceIds.addAll(target.sourceIds);
     }
 
     @Override
@@ -82,10 +84,7 @@ public class TargetSpell extends TargetObject {
             return false;
         }
         Spell spell = game.getStack().getSpell(id);
-        if (spell != null) {
-            return filter.match(spell, source.getSourceId(), source.getControllerId(), game);
-        }
-        return false;
+        return spell != null && filter.match(spell, source.getSourceId(), source.getControllerId(), game);
     }
 
     @Override
@@ -135,6 +134,20 @@ public class TargetSpell extends TargetObject {
     private boolean canBeChosen(StackObject stackObject, UUID sourceID, UUID sourceControllerId, Game game) {
         return stackObject instanceof Spell
                 && game.getState().getPlayersInRange(sourceControllerId, game).contains(stackObject.getControllerId())
-                && filter.match((Spell) stackObject, sourceID, sourceControllerId, game);
+                && filter.match(stackObject, sourceID, sourceControllerId, game);
     }
+
+    @Override
+    public void addTarget(UUID id, Ability source, Game game, boolean skipEvent) {
+        Spell spell = game.getStack().getSpell(id);
+        if (spell != null) { // remember the original sourceID
+            sourceIds.add(spell.getSourceId());
+        }
+        super.addTarget(id, source, game, skipEvent);
+    }
+
+    public Set<UUID> getSourceIds() {
+        return sourceIds;
+    }
+
 }

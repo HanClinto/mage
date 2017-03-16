@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import mage.cards.decks.DeckCardLists;
+import mage.client.chat.LocalCommands;
 import mage.constants.ManaType;
 import mage.constants.PlayerAction;
 import mage.game.match.MatchOptions;
@@ -19,7 +20,7 @@ import mage.view.*;
 /**
  * Created by IGOUDT on 15-9-2016.
  */
-public class SessionHandler {
+public final class SessionHandler {
 
     private static Session session;
 
@@ -306,7 +307,11 @@ public class SessionHandler {
     }
 
     public static boolean sendChatMessage(UUID chatId, String text) {
-        return session.sendChatMessage(chatId, text);
+        if (!LocalCommands.handleLocalCommands(chatId, text)) {
+            return session.sendChatMessage(chatId, text);
+        } else {
+            return false;
+        }
     }
 
     public static boolean sendPlayerManaType(UUID gameId, UUID playerId, ManaType data) {

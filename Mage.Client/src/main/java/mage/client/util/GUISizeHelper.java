@@ -13,15 +13,13 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import mage.client.MageFrame;
 import mage.client.dialog.PreferencesDialog;
-import mage.sets.avacynrestored.GuiseOfFire;
-import org.apache.log4j.Logger;
 import org.mage.card.arcane.CardRenderer;
 
 /**
  *
  * @author LevelX2
  */
-public class GUISizeHelper {
+public final class GUISizeHelper {
 
     // relate the native image card size to a value of the size scale
     final static int CARD_IMAGE_WIDTH = 312;
@@ -145,12 +143,10 @@ public class GUISizeHelper {
         otherZonesCardDimension = new Dimension(CARD_IMAGE_WIDTH * otherZonesCardSize / 42, CARD_IMAGE_HEIGHT * otherZonesCardSize / 42);
         if (PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_RENDERING_FALLBACK, "false").equals("false")) {
             otherZonesCardVerticalOffset = CardRenderer.getCardTopHeight(otherZonesCardDimension.width);
+        } else if (otherZonesCardSize > 29) {
+            otherZonesCardVerticalOffset = otherZonesCardDimension.height / 8;
         } else {
-            if (otherZonesCardSize > 29) {
-                otherZonesCardVerticalOffset = otherZonesCardDimension.height / 8;
-            } else {
-                otherZonesCardVerticalOffset = otherZonesCardDimension.height / 10;
-            }
+            otherZonesCardVerticalOffset = otherZonesCardDimension.height / 10;
         }
 
         int battlefieldCardMinSize = PreferencesDialog.getCachedValue(PreferencesDialog.KEY_GUI_CARD_BATTLEFIELD_MIN_SIZE, 10);

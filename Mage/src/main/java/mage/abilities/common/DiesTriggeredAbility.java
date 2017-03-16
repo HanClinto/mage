@@ -37,7 +37,6 @@ import mage.game.permanent.Permanent;
 import mage.game.permanent.PermanentToken;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class DiesTriggeredAbility extends ZoneChangeTriggeredAbility {
@@ -69,7 +68,7 @@ public class DiesTriggeredAbility extends ZoneChangeTriggeredAbility {
     @Override
     public boolean checkEventType(GameEvent event, Game game) {
         if (super.checkEventType(event, game)) {
-            return ((ZoneChangeEvent) event).getFromZone().equals(Zone.BATTLEFIELD) && ((ZoneChangeEvent) event).getToZone().equals(Zone.GRAVEYARD);
+            return ((ZoneChangeEvent) event).getFromZone() == Zone.BATTLEFIELD && ((ZoneChangeEvent) event).getToZone() == Zone.GRAVEYARD;
         }
         return false;
     }
@@ -83,7 +82,7 @@ public class DiesTriggeredAbility extends ZoneChangeTriggeredAbility {
     public boolean checkTrigger(GameEvent event, Game game) {
         if (super.checkTrigger(event, game)) {
             ZoneChangeEvent zEvent = (ZoneChangeEvent) event;
-            if (zEvent.getTarget().canTransform()) {
+            if (zEvent.getTarget().isTransformable()) {
                 if (!zEvent.getTarget().getAbilities().contains(this)) {
                     return false;
                 }

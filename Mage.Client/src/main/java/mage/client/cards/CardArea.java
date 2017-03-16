@@ -52,7 +52,7 @@ import org.mage.card.arcane.CardPanel;
 
 public class CardArea extends JPanel implements MouseListener {
 
-    protected CardEventSource cardEventSource = new CardEventSource();
+    protected final CardEventSource cardEventSource = new CardEventSource();
 
     private boolean reloaded = false;
     private final javax.swing.JLayeredPane cardArea;
@@ -89,7 +89,7 @@ public class CardArea extends JPanel implements MouseListener {
         setGUISize();
         for (Component component : cardArea.getComponents()) {
             if (component instanceof CardPanel) {
-                ((CardPanel) component).setBounds(0, 0, cardDimension.width, cardDimension.height);
+                component.setBounds(0, 0, cardDimension.width, cardDimension.height);
             }
         }
     }
@@ -148,7 +148,7 @@ public class CardArea extends JPanel implements MouseListener {
             tmp.setAbility(card); // cross-reference, required for ability picker
             card = tmp;
         }
-        MageCard cardPanel = Plugins.getInstance().getMageCard(card, bigCard, cardDimension, gameId, true);
+        MageCard cardPanel = Plugins.getInstance().getMageCard(card, bigCard, cardDimension, gameId, true, true);
 
         cardPanel.setBounds(rectangle);
         cardPanel.addMouseListener(this);
@@ -163,7 +163,7 @@ public class CardArea extends JPanel implements MouseListener {
     private void loadCardsMany(CardsView showCards, BigCard bigCard, UUID gameId) {
         int rowsOfCards = 20;
         int columns = 1;
-        if (showCards != null && showCards.size() > 0) {
+        if (showCards != null && !showCards.isEmpty()) {
             Rectangle rectangle = new Rectangle(cardDimension.width, cardDimension.height);
             int count = 0;
             for (CardView card : showCards.values()) {

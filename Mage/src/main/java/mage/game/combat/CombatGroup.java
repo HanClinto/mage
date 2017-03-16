@@ -134,7 +134,7 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
     }
 
     public void assignDamageToBlockers(boolean first, Game game) {
-        if (attackers.size() > 0 && (!first || hasFirstOrDoubleStrike(game))) {
+        if (!attackers.isEmpty() && (!first || hasFirstOrDoubleStrike(game))) {
             if (blockers.isEmpty()) {
                 unblockedDamage(first, game);
             } else {
@@ -156,7 +156,7 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
     }
 
     public void assignDamageToAttackers(boolean first, Game game) {
-        if (blockers.size() > 0 && (!first || hasFirstOrDoubleStrike(game))) {
+        if (!blockers.isEmpty() && (!first || hasFirstOrDoubleStrike(game))) {
             if (attackers.size() == 1) {
                 singleAttackerDamage(first, game);
             } else {
@@ -189,6 +189,9 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
      * @return
      */
     private boolean canDamage(Permanent perm, boolean first) {
+        if (perm == null) {
+            return false;
+        }
         // if now first strike combat damage step
         if (first) {
             // should have first strike or double strike
@@ -296,7 +299,7 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
                 }
                 if (damage > 0 && hasTrample(attacker)) {
                     defenderDamage(attacker, damage, game);
-                } else {
+                } else if (!blockerOrder.isEmpty()) {
                     // Assign the damge left to first blocker
                     assigned.put(blockerOrder.get(0), assigned.get(blockerOrder.get(0)) + damage);
                 }
@@ -396,7 +399,9 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
             }
         } else {
             Player defender = game.getPlayer(defenderId);
-            defender.damage(amount, attacker.getId(), game, true, true);
+            if (defender.isInGame()) {
+                defender.damage(amount, attacker.getId(), game, true, true);
+            }
         }
     }
 
@@ -454,7 +459,7 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
         Player player = game.getPlayer(playerId);
         List<UUID> blockerList = new ArrayList<>(blockers);
         blockerOrder.clear();
-        while (true && player.canRespond()) {
+        while (player.canRespond()) {
             if (blockerList.size() == 1) {
                 blockerOrder.add(blockerList.get(0));
                 break;
@@ -578,7 +583,7 @@ public class CombatGroup implements Serializable, Copyable<CombatGroup> {
         for (UUID uuid : attackers) {
             Permanent attacker = game.getPermanent(uuid);
             // Check if there are enough blockers to have a legal block
-            if (attacker != null && this.blocked && attacker.getMinBlockedBy() > 1 && blockers.size() > 0 && blockers.size() < attacker.getMinBlockedBy()) {
+            if (attacker != null && this.blocked && attacker.getMinBlockedBy() > 1 && !blockers.isEmpty() && blockers.size() < attacker.getMinBlockedBy()) {
                 for (UUID blockerId : blockers) {
                     Permanent blocker = game.getPermanent(blockerId);
                     if (blocker != null) {

@@ -18,7 +18,7 @@ import org.apache.log4j.Logger;
  * this evaluator is only good for two player games
  *
  */
-public class GameStateEvaluator2 {
+public final class GameStateEvaluator2 {
 
     private static final Logger logger = Logger.getLogger(GameStateEvaluator2.class);
 
@@ -64,7 +64,7 @@ public class GameStateEvaluator2 {
                 int onePermScore = evaluatePermanent(permanent, game);
                 playerScore += onePermScore;
                 if (logger.isDebugEnabled()) {
-                    sbPlayer.append(permanent.getName()).append("[").append(onePermScore).append("] ");
+                    sbPlayer.append(permanent.getName()).append('[').append(onePermScore).append("] ");
                 }
             }
             if (logger.isDebugEnabled()) {
@@ -78,7 +78,7 @@ public class GameStateEvaluator2 {
                 int onePermScore = evaluatePermanent(permanent, game);
                 opponentScore += onePermScore;
                 if (logger.isDebugEnabled()) {
-                    sbOpponent.append(permanent.getName()).append("[").append(onePermScore).append("] ");
+                    sbOpponent.append(permanent.getName()).append('[').append(onePermScore).append("] ");
                 }
             }
             if (logger.isDebugEnabled()) {
@@ -97,7 +97,7 @@ public class GameStateEvaluator2 {
         handScore *= 5;
 
         int score = lifeScore + permanentScore + handScore;
-        logger.debug(score + " total Score (life:" + lifeScore + " permanents:" + permanentScore + " hand:" + handScore + ")");
+        logger.debug(score + " total Score (life:" + lifeScore + " permanents:" + permanentScore + " hand:" + handScore + ')');
 
         return score;
     }

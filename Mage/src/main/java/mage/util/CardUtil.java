@@ -27,10 +27,6 @@
  */
 package mage.util;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 import mage.MageObject;
 import mage.Mana;
 import mage.ObjectColor;
@@ -38,13 +34,7 @@ import mage.abilities.Ability;
 import mage.abilities.ActivatedAbility;
 import mage.abilities.SpellAbility;
 import mage.abilities.costs.VariableCost;
-import mage.abilities.costs.mana.GenericManaCost;
-import mage.abilities.costs.mana.HybridManaCost;
-import mage.abilities.costs.mana.ManaCost;
-import mage.abilities.costs.mana.ManaCosts;
-import mage.abilities.costs.mana.ManaCostsImpl;
-import mage.abilities.costs.mana.MonoHybridManaCost;
-import mage.abilities.costs.mana.VariableManaCost;
+import mage.abilities.costs.mana.*;
 import mage.abilities.keyword.ChangelingAbility;
 import mage.cards.Card;
 import mage.cards.SplitCard;
@@ -56,10 +46,15 @@ import mage.game.permanent.token.Token;
 import mage.game.stack.Spell;
 import mage.util.functions.CopyTokenFunction;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * @author nantuko
  */
-public class CardUtil {
+public final class CardUtil {
 
     private static final String regexBlack = ".*\\x7b.{0,2}B.{0,2}\\x7d.*";
     private static final String regexBlue = ".*\\x7b.{0,2}U.{0,2}\\x7d.*";
@@ -69,7 +64,7 @@ public class CardUtil {
 
     private static final String SOURCE_EXILE_ZONE_TEXT = "SourceExileZone";
 
-    static String numberStrings[] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    static final String[] numberStrings = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
         "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "ninteen", "twenty"};
 
     public static final String[] NON_CHANGELING_SUBTYPES_VALUES = new String[]{
@@ -124,7 +119,7 @@ public class CardUtil {
             throw new IllegalArgumentException("Params can't be null");
         }
 
-        if (card1.getCardType().contains(CardType.CREATURE) && card2.getCardType().contains(CardType.CREATURE)) {
+        if (card1.isCreature() && card2.isCreature()) {
             if (card1.getAbilities().contains(ChangelingAbility.getInstance())
                     || card1.getSubtype(game).contains(ChangelingAbility.ALL_CREATURE_TYPE)
                     || card2.getAbilities().contains(ChangelingAbility.getInstance())
@@ -271,12 +266,12 @@ public class CardUtil {
                 reduceMana.add(manaCost.getMana());
             }
         }
-        ManaCosts<ManaCost> manaCostToCheckForColorless = new ManaCostsImpl<>();
-        // subtract colored mana
+        ManaCosts<ManaCost> manaCostToCheckForGeneric = new ManaCostsImpl<>();
+        // subtract non-generic mana
         for (ManaCost newManaCost : previousCost) {
             Mana mana = newManaCost.getMana();
             if (!(newManaCost instanceof MonoHybridManaCost) && mana.getGeneric() > 0) {
-                manaCostToCheckForColorless.add(newManaCost);
+                manaCostToCheckForGeneric.add(newManaCost);
                 continue;
             }
             boolean hybridMana = newManaCost instanceof HybridManaCost;
@@ -340,6 +335,17 @@ public class CardUtil {
                     continue;
                 }
             }
+
+            if(mana.getColorless() > 0 && reduceMana.getColorless() > 0) {
+                if(reduceMana.getColorless() > mana.getColorless()) {
+                    reduceMana.setColorless(reduceMana.getColorless() - mana.getColorless());
+                    mana.setColorless(0);
+                } else {
+                    mana.setColorless(mana.getColorless() - reduceMana.getColorless());
+                    reduceMana.setColorless(0);
+                }
+            }
+
             if (mana.count() > 0) {
                 if (newManaCost instanceof MonoHybridManaCost) {
                     if (mana.count() == 2) {
@@ -347,7 +353,7 @@ public class CardUtil {
                         continue;
                     }
                 }
-                manaCostToCheckForColorless.add(newManaCost);
+                manaCostToCheckForGeneric.add(newManaCost);
             }
 
         }
@@ -360,7 +366,7 @@ public class CardUtil {
             reduceAmount = reduceMana.getGeneric();
         }
         if (reduceAmount > 0) {
-            for (ManaCost newManaCost : manaCostToCheckForColorless) {
+            for (ManaCost newManaCost : manaCostToCheckForGeneric) {
                 Mana mana = newManaCost.getMana();
                 if (mana.getGeneric() == 0 || reduceAmount == 0) {
                     adjustedCost.add(newManaCost);
@@ -387,7 +393,7 @@ public class CardUtil {
                 }
             }
         } else {
-            adjustedCost.addAll(manaCostToCheckForColorless);
+            adjustedCost.addAll(manaCostToCheckForGeneric);
         }
         if (adjustedCost.isEmpty()) {
             adjustedCost.add(new GenericManaCost(0)); // neede to check if cost was reduced to 0
@@ -411,11 +417,11 @@ public class CardUtil {
     public static boolean isPermanentCard(Card card) {
         boolean permanent = false;
 
-        permanent |= card.getCardType().contains(CardType.ARTIFACT);
-        permanent |= card.getCardType().contains(CardType.CREATURE);
-        permanent |= card.getCardType().contains(CardType.ENCHANTMENT);
-        permanent |= card.getCardType().contains(CardType.LAND);
-        permanent |= card.getCardType().contains(CardType.PLANESWALKER);
+        permanent |= card.isArtifact();
+        permanent |= card.isCreature();
+        permanent |= card.isEnchantment();
+        permanent |= card.isLand();
+        permanent |= card.isPlaneswalker();
 
         return permanent;
     }
@@ -593,7 +599,7 @@ public class CardUtil {
     public static Set<Integer> getCMC(MageObject object) {
         Set<Integer> cmcObject = new HashSet<>();
         if (object instanceof Spell) {
-            cmcObject.add(((Spell) object).getConvertedManaCost());
+            cmcObject.add(object.getConvertedManaCost());
         } else if (object instanceof Card) {
             Card card = (Card) object;
             if (card instanceof SplitCard) {
@@ -640,7 +646,7 @@ public class CardUtil {
                 mana.setWhite(true);
             }
         }
-        if (card.canTransform()) {
+        if (card.isTransformable()) {
             Card secondCard = card.getSecondCardFace();
             ObjectColor color = secondCard.getColor(null);
             mana.setBlack(mana.isBlack() || color.isBlack());
@@ -676,7 +682,7 @@ public class CardUtil {
     }
 
     public static boolean cardCanBePlayedNow(Card card, UUID playerId, Game game) {
-        if (card.getCardType().contains(CardType.LAND)) {
+        if (card.isLand()) {
             return game.canPlaySorcery(playerId) && game.getPlayer(playerId).canPlayLand();
         } else {
             return card.getSpellAbility() != null && card.getSpellAbility().spellCanBeActivatedRegularlyNow(playerId, game);

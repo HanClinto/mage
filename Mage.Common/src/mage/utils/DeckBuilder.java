@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Random;
+
 import mage.Mana;
 import mage.cards.Card;
 import mage.cards.decks.Deck;
@@ -21,7 +21,7 @@ import mage.util.RandomUtil;
  *
  * @author nantuko
  */
-public class DeckBuilder {
+public final class DeckBuilder {
 
     private static final int DECK_COUNT40[] = {3, 6, 6, 4, 3, 2};
     private static final int DECK_COUNT60[] = {4, 9, 9, 5, 5, 3};

@@ -29,7 +29,6 @@ package mage.game;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import mage.abilities.Ability;
@@ -40,6 +39,8 @@ import mage.abilities.costs.mana.VariableManaCost;
 import mage.abilities.effects.OneShotEffect;
 import mage.abilities.effects.common.InfoEffect;
 import mage.cards.Card;
+import mage.cards.ExpansionSet;
+import mage.cards.Sets;
 import mage.cards.repository.CardCriteria;
 import mage.cards.repository.CardInfo;
 import mage.cards.repository.CardRepository;
@@ -48,6 +49,7 @@ import mage.constants.MultiplayerAttackOption;
 import mage.constants.Outcome;
 import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
+import mage.constants.SetType;
 import mage.constants.TimingRule;
 import mage.constants.Zone;
 import mage.game.command.Emblem;
@@ -88,7 +90,8 @@ public class MomirDuel extends GameImpl {
         for (UUID playerId : state.getPlayerList(startingPlayerId)) {
             Player player = getPlayer(playerId);
             if (player != null) {
-                addEmblem(new MomirEmblem(), ability, playerId);
+                CardInfo cardInfo = CardRepository.instance.findCard("Momir Vig, Simic Visionary");
+                addEmblem(new MomirEmblem(), cardInfo.getCard(), playerId);
             }
         }
         getState().addAbility(ability, null);
@@ -123,8 +126,8 @@ public class MomirDuel extends GameImpl {
 class MomirEmblem extends Emblem {
 
     public MomirEmblem() {
-        setName("Momir Vig, Simic Visionary");
-        //TODO: setExpansionSetCodeForImage(???);
+        setName("Emblem Momir Vig, Simic Visionary");
+        setExpansionSetCodeForImage("DIS");
         // {X}, Discard a card: Put a token into play as a copy of a random creature card with converted mana cost X. Play this ability only any time you could play a sorcery and only once each turn.
         LimitedTimesPerTurnActivatedAbility ability = new LimitedTimesPerTurnActivatedAbility(Zone.COMMAND, new MomirEffect(), new VariableManaCost());
         ability.addCost(new DiscardCardCost());
@@ -135,7 +138,6 @@ class MomirEmblem extends Emblem {
 }
 
 class MomirEffect extends OneShotEffect {
-
 
     public MomirEffect() {
         super(Outcome.PutCreatureInPlay);
@@ -157,14 +159,26 @@ class MomirEffect extends OneShotEffect {
         // should this be random across card names, or card printings?
         CardCriteria criteria = new CardCriteria().types(CardType.CREATURE).convertedManaCost(value);
         List<CardInfo> options = CardRepository.instance.findCards(criteria);
-        if (options != null && !options.isEmpty()) {
-            Card card = options.get(RandomUtil.nextInt(options.size())).getCard();
-            EmptyToken token = new EmptyToken();
-            CardUtil.copyTo(token).from(card);
-            token.putOntoBattlefield(1, game, source.getSourceId(), source.getControllerId(), false, false);
-        } else {
+        if (options == null || options.isEmpty()) {
             game.informPlayers("No random creature card with converted mana cost of " + value + " was found.");
+            return false;
         }
+        EmptyToken token = new EmptyToken(); // search for a non custom set creature
+        while (token.getName().isEmpty() && !options.isEmpty()) {
+            int index = RandomUtil.nextInt(options.size());
+            ExpansionSet expansionSet = Sets.findSet(options.get(index).getSetCode());
+            if (expansionSet == null || expansionSet.getSetType().equals(SetType.CUSTOM_SET)) {
+                options.remove(index);
+            } else {
+                Card card = options.get(index).getCard();
+                if (card != null) {
+                    CardUtil.copyTo(token).from(card);
+                } else {
+                    options.remove(index);
+                }
+            }
+        }
+        token.putOntoBattlefield(1, game, source.getSourceId(), source.getControllerId(), false, false);
         return true;
     }
 }

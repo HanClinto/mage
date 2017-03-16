@@ -26,7 +26,7 @@
  * or implied, of BetaSteward_at_googlemail.com.
  */
 
-/*
+ /*
  * ConnectDialog.java
  *
  * Created on 20-Jan-2010, 9:37:07 PM
@@ -34,7 +34,6 @@
 package mage.client.dialog;
 
 import java.awt.Cursor;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -78,15 +77,10 @@ public class ConnectDialog extends MageDialog {
     private static final Logger logger = Logger.getLogger(ConnectDialog.class);
     private Connection connection;
     private ConnectTask task;
-    private RegisterUserDialog registerUserDialog;
-    private ResetPasswordDialog resetPasswordDialog;
+    private final RegisterUserDialog registerUserDialog;
+    private final ResetPasswordDialog resetPasswordDialog;
 
-    private final ActionListener connectAction = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent evt) {
-            btnConnectActionPerformed(evt);
-        }
-    };
+    private final ActionListener connectAction = evt -> btnConnectActionPerformed(evt);
 
     /**
      * Creates new form ConnectDialog
@@ -166,6 +160,9 @@ public class ConnectDialog extends MageDialog {
         lblStatus = new javax.swing.JLabel();
         btnRegister = new javax.swing.JButton();
         btnForgotPassword = new javax.swing.JButton();
+        btnFind1 = new javax.swing.JButton();
+        btnFind2 = new javax.swing.JButton();
+        btnFind3 = new javax.swing.JButton();
 
         setTitle("Connect to server");
         setNormalBounds(new java.awt.Rectangle(100, 100, 410, 307));
@@ -176,11 +173,7 @@ public class ConnectDialog extends MageDialog {
         btnFind.setText("Find...");
         btnFind.setToolTipText("Shows the list of public servers");
         btnFind.setName("findServerBtn"); // NOI18N
-        btnFind.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                findPublicServerActionPerformed(evt);
-            }
-        });
+        btnFind.addActionListener(evt -> findPublicServerActionPerformed(evt));
 
         lblPort.setLabelFor(txtPort);
         lblPort.setText("Port:");
@@ -204,56 +197,60 @@ public class ConnectDialog extends MageDialog {
 
         chkAutoConnect.setText("Automatically connect to this server next time");
         chkAutoConnect.setToolTipText("<HTML>If active this connect dialog will not be shown if you choose to connect.<br>\nInstead XMage tries to connect to the last server you were connected to.");
-        chkAutoConnect.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                chkAutoConnectActionPerformed(evt);
-            }
-        });
+        chkAutoConnect.addActionListener(evt -> chkAutoConnectActionPerformed(evt));
 
         chkForceUpdateDB.setText("Force update of card database");
         chkForceUpdateDB.setToolTipText("<HTML>If active the comparison of the server cards database to the client database will be enforced.<br>If not, the comparison will only done if the database version of the client is lower than the version of the server.");
-        chkForceUpdateDB.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                chkForceUpdateDBActionPerformed(evt);
-            }
-        });
+        chkForceUpdateDB.addActionListener(evt -> chkForceUpdateDBActionPerformed(evt));
 
         jProxySettingsButton.setText("Proxy Settings...");
-        jProxySettingsButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jProxySettingsButtonActionPerformed(evt);
-            }
-        });
+        jProxySettingsButton.addActionListener(evt -> jProxySettingsButtonActionPerformed(evt));
 
         btnConnect.setText("Connect");
-        btnConnect.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnConnectActionPerformed(evt);
-            }
-        });
+        btnConnect.addActionListener(evt -> btnConnectActionPerformed(evt));
 
         btnCancel.setText("Cancel");
-        btnCancel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCancelActionPerformed(evt);
-            }
-        });
+        btnCancel.addActionListener(evt -> btnCancelActionPerformed(evt));
 
         btnRegister.setText("Register new user");
         btnRegister.setToolTipText("<html>XMage now supports user authentication.<br>Register your account before you log in.<html>");
-        btnRegister.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnRegisterActionPerformed(evt);
-            }
-        });
+        btnRegister.addActionListener(evt -> btnRegisterActionPerformed(evt));
 
         btnForgotPassword.setText("Forgot password");
         btnForgotPassword.setToolTipText("<html>You can reset your password if you have registered<br>your account with an email address.</html>");
-        btnForgotPassword.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnForgotPasswordActionPerformed(evt);
-            }
-        });
+        btnForgotPassword.addActionListener(evt -> btnForgotPasswordActionPerformed(evt));
+
+        btnFind1.setText("X");
+        btnFind1.setToolTipText("Connect to xmage.de");
+        btnFind1.setActionCommand("connectXmageDe");
+        btnFind1.setAlignmentY(0.0F);
+        btnFind1.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnFind1.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
+        btnFind1.setMaximumSize(new java.awt.Dimension(42, 23));
+        btnFind1.setMinimumSize(new java.awt.Dimension(42, 23));
+        btnFind1.setName("connectXmageDeBtn"); // NOI18N
+        btnFind1.setPreferredSize(new java.awt.Dimension(23, 23));
+        btnFind1.addActionListener(evt -> connectXmageDe(evt));
+
+        btnFind2.setText("L");
+        btnFind2.setToolTipText("Connect to localhost");
+        btnFind2.setActionCommand("connectLocalhost");
+        btnFind2.setAlignmentY(0.0F);
+        btnFind2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnFind2.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
+        btnFind2.setName("connectLocalhostBtn"); // NOI18N
+        btnFind2.setPreferredSize(new java.awt.Dimension(23, 23));
+        btnFind2.addActionListener(evt -> connectLocalhost(evt));
+
+        btnFind3.setText("W");
+        btnFind3.setToolTipText("Connect to woogerworks");
+        btnFind3.setActionCommand("connectWoogerworks");
+        btnFind3.setAlignmentY(0.0F);
+        btnFind3.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnFind3.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
+        btnFind3.setName("connectWoogerworksBtn"); // NOI18N
+        btnFind3.setPreferredSize(new java.awt.Dimension(23, 23));
+        btnFind3.addActionListener(evt -> connectWoogerworks(evt));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -273,18 +270,26 @@ public class ConnectDialog extends MageDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblStatus, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(chkForceUpdateDB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(chkAutoConnect, javax.swing.GroupLayout.DEFAULT_SIZE, 386, Short.MAX_VALUE)
                             .addComponent(jProxySettingsButton)
                             .addComponent(cbFlag, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(txtServer, javax.swing.GroupLayout.DEFAULT_SIZE, 286, Short.MAX_VALUE)
-                                    .addComponent(txtPort, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(txtUserName)
-                                    .addComponent(txtPassword))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnFind))
-                            .addComponent(chkForceUpdateDB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(chkAutoConnect, javax.swing.GroupLayout.DEFAULT_SIZE, 375, Short.MAX_VALUE)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(txtServer, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 286, Short.MAX_VALUE)
+                                    .addComponent(txtUserName, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(txtPassword, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(btnFind1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(btnFind3, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(btnFind2, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(69, 69, 69)))
+                                .addGap(8, 8, 8)
+                                .addComponent(btnFind, javax.swing.GroupLayout.DEFAULT_SIZE, 92, Short.MAX_VALUE))))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -309,7 +314,10 @@ public class ConnectDialog extends MageDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblPort))
+                    .addComponent(lblPort)
+                    .addComponent(btnFind1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnFind2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnFind3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -328,7 +336,7 @@ public class ConnectDialog extends MageDialog {
                 .addComponent(chkForceUpdateDB)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jProxySettingsButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 38, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 47, Short.MAX_VALUE)
                 .addComponent(lblStatus, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -383,13 +391,14 @@ public class ConnectDialog extends MageDialog {
             connection.setUsername(this.txtUserName.getText().trim());
             connection.setPassword(this.txtPassword.getText().trim());
             connection.setForceDBComparison(this.chkForceUpdateDB.isSelected());
+            connection.setUserIdStr(System.getProperty("user.name") + ":" + MagePreferences.getUserNames());
             MageFrame.getPreferences().put(KEY_CONNECT_FLAG, ((CountryItemEditor) cbFlag.getEditor()).getImageItem());
             PreferencesDialog.setProxyInformation(connection);
 
             // pref settings
             MageFrame.getInstance().setUserPrefsToConnection(connection);
 
-            logger.debug("connecting: " + connection.getProxyType() + " " + connection.getProxyHost() + " " + connection.getProxyPort());
+            logger.debug("connecting: " + connection.getProxyType() + ' ' + connection.getProxyHost() + ' ' + connection.getProxyPort());
             task = new ConnectTask();
             task.execute();
         } finally {
@@ -596,6 +605,35 @@ public class ConnectDialog extends MageDialog {
         resetPasswordDialog.showDialog();
     }//GEN-LAST:event_btnForgotPasswordActionPerformed
 
+    private void connectXmageDe(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFind1findPublicServerActionPerformed
+        String serverAddress = "xmage.de";
+        this.txtServer.setText(serverAddress);
+        this.txtPort.setText("17171");
+        // Update userName and password according to the chosen server.
+        this.txtUserName.setText(MagePreferences.getUserName(serverAddress));
+        this.txtPassword.setText(MagePreferences.getPassword(serverAddress));
+
+    }//GEN-LAST:event_btnFind1findPublicServerActionPerformed
+
+    private void connectLocalhost(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFind2findPublicServerActionPerformed
+        String serverAddress = "localhost";
+        this.txtServer.setText(serverAddress);
+        this.txtPort.setText("17171");
+        // Update userName and password according to the chosen server.
+        this.txtUserName.setText(MagePreferences.getUserName(serverAddress));
+        this.txtPassword.setText(MagePreferences.getPassword(serverAddress));
+
+    }//GEN-LAST:event_btnFind2findPublicServerActionPerformed
+
+    private void connectWoogerworks(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_connectWoogerworks
+        String serverAddress = "xmage.woogerworks.com";
+        this.txtServer.setText(serverAddress);
+        this.txtPort.setText("17171");
+        // Update userName and password according to the chosen server.
+        this.txtUserName.setText(MagePreferences.getUserName(serverAddress));
+        this.txtPassword.setText(MagePreferences.getPassword(serverAddress));
+    }//GEN-LAST:event_connectWoogerworks
+
     public String getServer() {
         return this.txtServer.getText();
     }
@@ -608,6 +646,9 @@ public class ConnectDialog extends MageDialog {
     private javax.swing.JButton btnCancel;
     private javax.swing.JButton btnConnect;
     private javax.swing.JButton btnFind;
+    private javax.swing.JButton btnFind1;
+    private javax.swing.JButton btnFind2;
+    private javax.swing.JButton btnFind3;
     private javax.swing.JButton btnForgotPassword;
     private javax.swing.JButton btnRegister;
     private mage.client.util.gui.countryBox.CountryComboBox cbFlag;

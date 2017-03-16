@@ -36,12 +36,12 @@ import mage.MageObject;
 import mage.abilities.Ability;
 import mage.abilities.effects.Effect;
 import mage.cards.Card;
-import mage.constants.CardType;
 import mage.constants.Zone;
 import mage.game.Game;
 import mage.game.GameState;
 import mage.game.command.Emblem;
 import mage.game.permanent.Permanent;
+import mage.game.permanent.PermanentToken;
 import mage.target.targetpointer.TargetPointer;
 import mage.util.GameLog;
 
@@ -86,7 +86,14 @@ public class CardsView extends LinkedHashMap<UUID, CardView> {
                     if (sourceObject == null) {
                         sourceObject = game.getPermanent(ability.getSourceId());
                     }
-                    isCard = true;
+                    if (sourceObject == null) {
+                        sourceObject = game.getObject(ability.getSourceId());
+                        if (sourceObject instanceof PermanentToken) {
+                            isPermanent = true;
+                        }
+                    } else {
+                        isCard = true;
+                    }
                     break;
                 case BATTLEFIELD:
                     sourceObject = game.getPermanent(ability.getSourceId());
@@ -104,19 +111,13 @@ public class CardsView extends LinkedHashMap<UUID, CardView> {
                 case COMMAND:
                     sourceObject = game.getObject(ability.getSourceId());
                     if (sourceObject instanceof Emblem) {
-                        Card planeswalkerCard = game.getCard(((Emblem) sourceObject).getSourceId());
-                        if (planeswalkerCard != null) {
-                            if (!planeswalkerCard.getCardType().contains(CardType.PLANESWALKER)) {
-                                if (planeswalkerCard.getSecondCardFace() != null) {
-                                    planeswalkerCard = planeswalkerCard.getSecondCardFace();
-                                }
-                            }
-                            abilityView = new AbilityView(ability, "Emblem " + planeswalkerCard.getName(), new CardView(new EmblemView((Emblem) sourceObject, planeswalkerCard)));
-                            abilityView.setName("Emblem " + planeswalkerCard.getName());
-                            abilityView.setExpansionSetCode(planeswalkerCard.getExpansionSetCode());
-                        } else {
-                            throw new IllegalArgumentException("Source card for emblem not found.");
-                        }
+//                        Card sourceCard = (Card) ((Emblem) sourceObject).getSourceObject();
+//                        if (sourceCard == null) {
+//                            throw new IllegalArgumentException("Source card for emblem not found.");
+//                        }
+                        abilityView = new AbilityView(ability, sourceObject.getName(), new CardView(new EmblemView((Emblem) sourceObject)));
+                        abilityView.setName(((Emblem) sourceObject).getName());
+                        // abilityView.setExpansionSetCode(sourceCard.getExpansionSetCode());
                     }
                     break;
             }
@@ -132,7 +133,7 @@ public class CardsView extends LinkedHashMap<UUID, CardView> {
                     }
                     abilityView = new AbilityView(ability, sourceObject.getName(), sourceCardView);
                 }
-                if (ability.getTargets().size() > 0) {
+                if (!ability.getTargets().isEmpty()) {
                     abilityView.setTargets(ability.getTargets());
                 } else {
                     List<UUID> abilityTargets = new ArrayList<>();

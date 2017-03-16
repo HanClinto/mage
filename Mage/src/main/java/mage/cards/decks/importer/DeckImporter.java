@@ -28,10 +28,11 @@
 
 package mage.cards.decks.importer;
 
-import java.io.File;
-import java.util.Scanner;
 import mage.cards.decks.DeckCardLists;
 import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.util.Scanner;
 
 /**
  *
@@ -40,7 +41,8 @@ import org.apache.log4j.Logger;
 public abstract class DeckImporter {
 
     private static final Logger logger = Logger.getLogger(DeckImporter.class);
-    protected StringBuilder sbMessage = new StringBuilder();
+
+    protected StringBuilder sbMessage = new StringBuilder(); //TODO we should stop using this not garbage collectable StringBuilder. It just bloats
     protected int lineCount;
 
     public DeckCardLists importDeck(String file) {
@@ -51,10 +53,10 @@ public abstract class DeckImporter {
             return deckList;
         }
         lineCount = 0;
+
         sbMessage.setLength(0);
         try {
-            Scanner scanner = new Scanner(f);
-            try {
+            try (Scanner scanner = new Scanner(f)) {
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine().trim();
                     lineCount++;
@@ -63,12 +65,8 @@ public abstract class DeckImporter {
                 if (sbMessage.length() > 0) {
                     logger.fatal(sbMessage);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 logger.fatal(null, ex);
-            }
-            finally {
-                scanner.close();
             }
         } catch (Exception ex) {
             logger.fatal(null, ex);

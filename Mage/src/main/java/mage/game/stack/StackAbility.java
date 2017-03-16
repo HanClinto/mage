@@ -27,9 +27,8 @@
  */
 package mage.game.stack;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+
 import mage.MageInt;
 import mage.MageObject;
 import mage.ObjectColor;
@@ -54,6 +53,7 @@ import mage.constants.AbilityType;
 import mage.constants.AbilityWord;
 import mage.constants.CardType;
 import mage.constants.EffectType;
+import mage.constants.Outcome;
 import mage.constants.Zone;
 import mage.constants.ZoneDetail;
 import mage.game.Game;
@@ -71,7 +71,7 @@ import mage.watchers.Watcher;
  */
 public class StackAbility extends StackObjImpl implements Ability {
 
-    private static List<CardType> emptyCardType = new ArrayList<>();
+    private static EnumSet<CardType> emptyCardType = EnumSet.noneOf(CardType.class);
     private static List<String> emptyString = new ArrayList<>();
     private static ObjectColor emptyColor = new ObjectColor();
     private static ManaCosts<ManaCost> emptyCost = new ManaCostsImpl<>();
@@ -86,7 +86,7 @@ public class StackAbility extends StackObjImpl implements Ability {
     public StackAbility(Ability ability, UUID controllerId) {
         this.ability = ability;
         this.controllerId = controllerId;
-        this.name = "stack ability (" + ability.getRule() + ")";
+        this.name = "stack ability (" + ability.getRule() + ')';
     }
 
     public StackAbility(final StackAbility stackAbility) {
@@ -141,7 +141,7 @@ public class StackAbility extends StackObjImpl implements Ability {
 
     @Override
     public String getIdName() {
-        return getName() + " [" + getId().toString().substring(0, 3) + "]";
+        return getName() + " [" + getId().toString().substring(0, 3) + ']';
     }
 
     @Override
@@ -159,7 +159,7 @@ public class StackAbility extends StackObjImpl implements Ability {
     }
 
     @Override
-    public List<CardType> getCardType() {
+    public EnumSet<CardType> getCardType() {
         return emptyCardType;
     }
 
@@ -194,7 +194,7 @@ public class StackAbility extends StackObjImpl implements Ability {
     public ObjectColor getColor(Game game) {
         return emptyColor;
     }
-    
+
     @Override
     public ObjectColor getFrameColor(Game game) {
         return ability.getSourceObject(game).getFrameColor(game);
@@ -220,7 +220,7 @@ public class StackAbility extends StackObjImpl implements Ability {
     public MageInt getToughness() {
         return MageInt.EmptyMageInt;
     }
-    
+
     @Override
     public int getStartingLoyalty() {
         return 0;
@@ -588,11 +588,12 @@ public class StackAbility extends StackObjImpl implements Ability {
         newAbility.newId();
         StackAbility newStackAbility = new StackAbility(newAbility, newControllerId);
         game.getStack().push(newStackAbility);
-        if (chooseNewTargets && newAbility.getTargets().size() > 0) {
+        if (chooseNewTargets && !newAbility.getTargets().isEmpty()) {
             Player controller = game.getPlayer(newControllerId);
-            if (controller.chooseUse(newAbility.getEffects().get(0).getOutcome(), "Choose new targets?", source, game)) {
+            Outcome outcome = newAbility.getEffects().isEmpty() ? Outcome.Detriment : newAbility.getEffects().get(0).getOutcome();
+            if (controller.chooseUse(outcome, "Choose new targets?", source, game)) {
                 newAbility.getTargets().clearChosen();
-                newAbility.getTargets().chooseTargets(newAbility.getEffects().get(0).getOutcome(), newControllerId, newAbility, false, game);
+                newAbility.getTargets().chooseTargets(outcome, newControllerId, newAbility, false, game);
             }
         }
         game.fireEvent(new GameEvent(GameEvent.EventType.COPIED_STACKOBJECT, newStackAbility.getId(), this.getId(), newControllerId));

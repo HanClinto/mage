@@ -52,7 +52,7 @@ import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCostsImpl;
 import mage.abilities.costs.mana.PhyrexianManaCost;
 import mage.abilities.effects.RequirementEffect;
-import mage.abilities.mana.ManaAbility;
+import mage.abilities.mana.ActivatedManaAbilityImpl;
 import mage.cards.Card;
 import mage.cards.Cards;
 import mage.cards.decks.Deck;
@@ -65,9 +65,14 @@ import mage.constants.ManaType;
 import mage.constants.Outcome;
 import mage.constants.PhaseStep;
 import mage.constants.PlayerAction;
+import static mage.constants.PlayerAction.HOLD_PRIORITY;
+import static mage.constants.PlayerAction.REQUEST_AUTO_ANSWER_ID_NO;
 import static mage.constants.PlayerAction.REQUEST_AUTO_ANSWER_RESET_ALL;
+import static mage.constants.PlayerAction.TRIGGER_AUTO_ORDER_NAME_LAST;
 import static mage.constants.PlayerAction.TRIGGER_AUTO_ORDER_RESET_ALL;
 import mage.constants.RangeOfInfluence;
+import static mage.constants.SpellAbilityType.SPLIT;
+import static mage.constants.SpellAbilityType.SPLIT_FUSED;
 import mage.constants.Zone;
 import mage.filter.common.FilterAttackingCreature;
 import mage.filter.common.FilterBlockingCreature;
@@ -80,6 +85,7 @@ import mage.game.draft.Draft;
 import mage.game.events.GameEvent;
 import mage.game.match.Match;
 import mage.game.permanent.Permanent;
+import mage.game.stack.Spell;
 import mage.game.tournament.Tournament;
 import mage.players.Player;
 import mage.players.PlayerImpl;
@@ -246,7 +252,7 @@ public class HumanPlayer extends PlayerImpl {
     @Override
     public int chooseReplacementEffect(Map<String, String> rEffects, Game game) {
         updateGameStatePriority("chooseEffect", game);
-        if (rEffects.size() == 1) {
+        if (rEffects.size() <= 1) {
             return 0;
         }
         if (!autoSelectReplacementEffects.isEmpty()) {
@@ -579,98 +585,106 @@ public class HumanPlayer extends PlayerImpl {
     public boolean priority(Game game) {
         passed = false;
         if (!abort) {
+            HumanPlayer controllingPlayer = this;
+            if (isGameUnderControl()) {
+                Player player = game.getPlayer(getTurnControlledBy());
+                if (player instanceof HumanPlayer) {
+                    controllingPlayer = (HumanPlayer) player;
+                }
+            }
             if (getJustActivatedType() != null && !holdingPriority) {
-                if (userData.isPassPriorityCast() && getJustActivatedType().equals(AbilityType.SPELL)) {
+                if (controllingPlayer.getUserData().isPassPriorityCast() && getJustActivatedType().equals(AbilityType.SPELL)) {
                     setJustActivatedType(null);
                     pass(game);
                     return false;
                 }
-                if (userData.isPassPriorityActivation() && getJustActivatedType().equals(AbilityType.ACTIVATED)) {
+                if (controllingPlayer.getUserData().isPassPriorityActivation() && getJustActivatedType().equals(AbilityType.ACTIVATED)) {
                     setJustActivatedType(null);
                     pass(game);
                     return false;
                 }
             }
-
-            if (passedAllTurns || passedTurnSkipStack) {
-                if (passWithManaPoolCheck(game)) {
-                    return false;
-                }
-            }
-            if (passedUntilEndStepBeforeMyTurn) {
-
-                if (!game.getTurn().getStepType().equals(PhaseStep.END_TURN)) {
+            if (isGameUnderControl()) { // Use the skip actions only if the player itself controls its turn
+                if (passedAllTurns || passedTurnSkipStack) {
                     if (passWithManaPoolCheck(game)) {
                         return false;
                     }
-                } else {
-                    PlayerList playerList = game.getState().getPlayerList(playerId);
-                    if (!playerList.getPrevious().equals(game.getActivePlayerId())) {
+                }
+                if (passedUntilEndStepBeforeMyTurn) {
+
+                    if (!game.getTurn().getStepType().equals(PhaseStep.END_TURN)) {
                         if (passWithManaPoolCheck(game)) {
                             return false;
                         }
-                    }
-                }
-            }
-            if (game.getStack().isEmpty()) {
-                passedUntilStackResolved = false;
-                boolean dontCheckPassStep = false;
-                if (passedTurn || passedTurnSkipStack) {
-                    if (passWithManaPoolCheck(game)) {
-                        return false;
-                    }
-                }
-                if (passedUntilNextMain) {
-                    if (game.getTurn().getStepType().equals(PhaseStep.POSTCOMBAT_MAIN) || game.getTurn().getStepType().equals(PhaseStep.PRECOMBAT_MAIN)) {
-                        // it's a main phase
-                        if (!skippedAtLeastOnce || (!playerId.equals(game.getActivePlayerId()) && !this.getUserData().getUserSkipPrioritySteps().isStopOnAllMainPhases())) {
-                            skippedAtLeastOnce = true;
+                    } else {
+                        PlayerList playerList = game.getState().getPlayerList(playerId);
+                        if (!playerList.getPrevious().equals(game.getActivePlayerId())) {
                             if (passWithManaPoolCheck(game)) {
                                 return false;
                             }
-                        } else {
-                            dontCheckPassStep = true;
-                            passedUntilNextMain = false; // reset skip action
-                        }
-                    } else {
-                        skippedAtLeastOnce = true;
-                        if (passWithManaPoolCheck(game)) {
-                            return false;
                         }
                     }
                 }
-                if (passedUntilEndOfTurn) {
-                    if (game.getTurn().getStepType().equals(PhaseStep.END_TURN)) {
-                        // It's end of turn phase
-                        if (!skippedAtLeastOnce || (playerId.equals(game.getActivePlayerId()) && !this.getUserData().getUserSkipPrioritySteps().isStopOnAllEndPhases())) {
-                            skippedAtLeastOnce = true;
-                            if (passWithManaPoolCheck(game)) {
-                                return false;
-                            }
-                        } else {
-                            dontCheckPassStep = true;
-                            passedUntilEndOfTurn = false;
-                        }
-                    } else {
-                        skippedAtLeastOnce = true;
-                        if (passWithManaPoolCheck(game)) {
-                            return false;
-                        }
-                    }
-                }
-                if (!dontCheckPassStep && checkPassStep(game)) {
-                    if (passWithManaPoolCheck(game)) {
-                        return false;
-                    }
-                }
-            } else if (passedUntilStackResolved) {
-                if (dateLastAddedToStack == game.getStack().getDateLastAdded()) {
-                    dateLastAddedToStack = game.getStack().getDateLastAdded();
-                    if (passWithManaPoolCheck(game)) {
-                        return false;
-                    }
-                } else {
+                if (game.getStack().isEmpty()) {
                     passedUntilStackResolved = false;
+                    boolean dontCheckPassStep = false;
+                    if (passedTurn || passedTurnSkipStack) {
+                        if (passWithManaPoolCheck(game)) {
+                            return false;
+                        }
+                    }
+                    if (passedUntilNextMain) {
+                        if (game.getTurn().getStepType().equals(PhaseStep.POSTCOMBAT_MAIN) || game.getTurn().getStepType().equals(PhaseStep.PRECOMBAT_MAIN)) {
+                            // it's a main phase
+                            if (!skippedAtLeastOnce || (!playerId.equals(game.getActivePlayerId()) && !this.getUserData().getUserSkipPrioritySteps().isStopOnAllMainPhases())) {
+                                skippedAtLeastOnce = true;
+                                if (passWithManaPoolCheck(game)) {
+                                    return false;
+                                }
+                            } else {
+                                dontCheckPassStep = true;
+                                passedUntilNextMain = false; // reset skip action
+                            }
+                        } else {
+                            skippedAtLeastOnce = true;
+                            if (passWithManaPoolCheck(game)) {
+                                return false;
+                            }
+                        }
+                    }
+                    if (passedUntilEndOfTurn) {
+                        if (game.getTurn().getStepType().equals(PhaseStep.END_TURN)) {
+                            // It's end of turn phase
+                            if (!skippedAtLeastOnce || (playerId.equals(game.getActivePlayerId()) && !this.getUserData().getUserSkipPrioritySteps().isStopOnAllEndPhases())) {
+                                skippedAtLeastOnce = true;
+                                if (passWithManaPoolCheck(game)) {
+                                    return false;
+                                }
+                            } else {
+                                dontCheckPassStep = true;
+                                passedUntilEndOfTurn = false;
+                            }
+                        } else {
+                            skippedAtLeastOnce = true;
+                            if (passWithManaPoolCheck(game)) {
+                                return false;
+                            }
+                        }
+                    }
+                    if (!dontCheckPassStep && checkPassStep(game, controllingPlayer)) {
+                        if (passWithManaPoolCheck(game)) {
+                            return false;
+                        }
+                    }
+                } else if (passedUntilStackResolved) {
+                    if (dateLastAddedToStack == game.getStack().getDateLastAdded()) {
+                        dateLastAddedToStack = game.getStack().getDateLastAdded();
+                        if (passWithManaPoolCheck(game)) {
+                            return false;
+                        }
+                    } else {
+                        passedUntilStackResolved = false;
+                    }
                 }
             }
             while (canRespond()) {
@@ -712,7 +726,7 @@ public class HumanPlayer extends PlayerImpl {
                             }
                             if (actingPlayer != null) {
                                 LinkedHashMap<UUID, ActivatedAbility> useableAbilities = actingPlayer.getUseableActivatedAbilities(object, zone, game);
-                                if (useableAbilities != null && useableAbilities.size() > 0) {
+                                if (useableAbilities != null && !useableAbilities.isEmpty()) {
                                     activateAbility(useableAbilities, object, game);
                                     result = true;
                                 }
@@ -729,13 +743,17 @@ public class HumanPlayer extends PlayerImpl {
         return false;
     }
 
-    private boolean checkPassStep(Game game) {
-        if (game.getStep() != null) {
+    private boolean checkPassStep(Game game, HumanPlayer controllingPlayer) {
+        try {
+
             if (playerId.equals(game.getActivePlayerId())) {
-                return !this.getUserData().getUserSkipPrioritySteps().getYourTurn().isPhaseStepSet(game.getStep().getType());
+                return !controllingPlayer.getUserData().getUserSkipPrioritySteps().getYourTurn().isPhaseStepSet(game.getStep().getType());
             } else {
-                return !this.getUserData().getUserSkipPrioritySteps().getOpponentTurn().isPhaseStepSet(game.getStep().getType());
+                return !controllingPlayer.getUserData().getUserSkipPrioritySteps().getOpponentTurn().isPhaseStepSet(game.getStep().getType());
             }
+        } catch (NullPointerException ex) {
+            String isNull = userData == null ? "null" : "not null";
+            logger.error("null pointer exception  UserData = " + isNull);
         }
         return true;
     }
@@ -795,19 +813,16 @@ public class HumanPlayer extends PlayerImpl {
     }
 
     @Override
-    public boolean playMana(Ability ability, ManaCost unpaid, String promptText, Game game) {
+    public boolean playMana(Ability abilityToCast, ManaCost unpaid, String promptText, Game game) {
         payManaMode = true;
-        boolean result = playManaHandling(unpaid, promptText, game);
+        boolean result = playManaHandling(abilityToCast, unpaid, promptText, game);
         payManaMode = false;
         return result;
     }
 
-    protected boolean playManaHandling(ManaCost unpaid, String promptText, Game game) {
+    protected boolean playManaHandling(Ability abilityToCast, ManaCost unpaid, String promptText, Game game) {
         updateGameStatePriority("playMana", game);
         Map<String, Serializable> options = new HashMap<>();
-        if (unpaid.getText().contains("P}")) {
-            options.put(Constants.Option.SPECIAL_BUTTON, (Serializable) "Pay 2 life");
-        }
         game.firePlayManaEvent(playerId, "Pay " + promptText, options);
         waitForResponse(game);
         if (!this.canRespond()) {
@@ -816,22 +831,10 @@ public class HumanPlayer extends PlayerImpl {
         if (response.getBoolean() != null) {
             return false;
         } else if (response.getUUID() != null) {
-            playManaAbilities(unpaid, game);
+            playManaAbilities(abilityToCast, unpaid, game);
         } else if (response.getString() != null && response.getString().equals("special")) {
             if (unpaid instanceof ManaCostsImpl) {
                 specialManaAction(unpaid, game);
-                // TODO: delve or convoke cards with PhyrexianManaCost won't work together (this combinaton does not exist yet)
-                @SuppressWarnings("unchecked")
-                ManaCostsImpl<ManaCost> costs = (ManaCostsImpl<ManaCost>) unpaid;
-                for (ManaCost cost : costs.getUnpaid()) {
-                    if (cost instanceof PhyrexianManaCost) {
-                        PhyrexianManaCost ph = (PhyrexianManaCost) cost;
-                        if (ph.canPay(null, null, playerId, game)) {
-                            ((PhyrexianManaCost) cost).pay(null, game, null, playerId, false, null);
-                        }
-                        break;
-                    }
-                }
             }
         } else if (response.getManaType() != null) {
             // this mana type can be paid once from pool
@@ -881,16 +884,21 @@ public class HumanPlayer extends PlayerImpl {
         return xValue;
     }
 
-    protected void playManaAbilities(ManaCost unpaid, Game game) {
+    protected void playManaAbilities(Ability abilityToCast, ManaCost unpaid, Game game) {
         updateGameStatePriority("playManaAbilities", game);
         MageObject object = game.getObject(response.getUUID());
         if (object == null) {
             return;
         }
+        Spell spell = game.getStack().getSpell(abilityToCast.getSourceId());
+        if (spell != null && spell.isDoneActivatingManaAbilities()) {
+            game.informPlayer(this, "You can no longer use activated mana abilities to pay for the current spell. Cancel and recast the spell and activate mana abilities first.");
+            return;
+        }
         Zone zone = game.getState().getZone(object.getId());
         if (zone != null) {
-            LinkedHashMap<UUID, ManaAbility> useableAbilities = getUseableManaAbilities(object, zone, game);
-            if (useableAbilities != null && useableAbilities.size() > 0) {
+            LinkedHashMap<UUID, ActivatedManaAbilityImpl> useableAbilities = getUseableManaAbilities(object, zone, game);
+            if (useableAbilities != null && !useableAbilities.isEmpty()) {
                 useableAbilities = ManaUtil.tryToAutoPay(unpaid, useableAbilities); // eliminates other abilities if one fits perfectly
                 currentlyUnpaidMana = unpaid;
                 activateAbility(useableAbilities, object, game);
@@ -918,7 +926,7 @@ public class HumanPlayer extends PlayerImpl {
                 }
             }
             options.put(Constants.Option.POSSIBLE_ATTACKERS, (Serializable) possibleAttackers);
-            if (possibleAttackers.size() > 0) {
+            if (!possibleAttackers.isEmpty()) {
                 options.put(Constants.Option.SPECIAL_BUTTON, (Serializable) "All attack");
             }
 
@@ -968,7 +976,7 @@ public class HumanPlayer extends PlayerImpl {
                             } else {
                                 Permanent creature = game.getPermanent(creatureId);
                                 if (creature != null) {
-                                    sb.append(creature.getIdName()).append(" ");
+                                    sb.append(creature.getIdName()).append(' ');
                                 }
                             }
 
@@ -1044,12 +1052,19 @@ public class HumanPlayer extends PlayerImpl {
                 StringBuilder sb = new StringBuilder(target.getTargetName());
                 Permanent attacker = game.getPermanent(attackerId);
                 if (attacker != null) {
-                    sb.append(" (").append(attacker.getName()).append(")");
+                    sb.append(" (").append(attacker.getName()).append(')');
                     target.setTargetName(sb.toString());
                 }
             }
             if (chooseTarget(Outcome.Damage, target, null, game)) {
-                declareAttacker(attackerId, response.getUUID(), game, true);
+                UUID defenderId = response.getUUID();
+                for (Player player : game.getPlayers().values()) {
+                    if (player.getId().equals(response.getUUID())) {
+                        defenderId = player.getId(); // get the correct player object
+                        break;
+                    }
+                }
+                declareAttacker(attackerId, defenderId, game, true);
                 return true;
             }
         }
@@ -1262,7 +1277,7 @@ public class HumanPlayer extends PlayerImpl {
         }
         if (userData.isUseFirstManaAbility() && object instanceof Permanent && object.getCardType().contains(CardType.LAND)) {
             ActivatedAbility ability = abilities.values().iterator().next();
-            if (ability instanceof ManaAbility) {
+            if (ability instanceof ActivatedManaAbilityImpl) {
                 activateAbility(ability, game);
                 return;
             }
@@ -1286,7 +1301,7 @@ public class HumanPlayer extends PlayerImpl {
             if (!ability.getSourceId().equals(getCastSourceIdWithAlternateMana()) && ability.getManaCostsToPay().convertedManaCost() > 0) {
                 return true;
             }
-            return ability instanceof ManaAbility;
+            return ability instanceof ActivatedManaAbilityImpl;
         }
         return true;
     }
@@ -1301,7 +1316,7 @@ public class HumanPlayer extends PlayerImpl {
                     LinkedHashMap<UUID, ActivatedAbility> useableAbilities = getSpellAbilities(object, game.getState().getZone(object.getId()), game);
                     if (useableAbilities != null && useableAbilities.size() == 1) {
                         return (SpellAbility) useableAbilities.values().iterator().next();
-                    } else if (useableAbilities != null && useableAbilities.size() > 0) {
+                    } else if (useableAbilities != null && !useableAbilities.isEmpty()) {
                         game.fireGetChoiceEvent(playerId, name, object, new ArrayList<>(useableAbilities.values()));
                         waitForResponse(game);
                         if (response.getUUID() != null) {
@@ -1326,7 +1341,8 @@ public class HumanPlayer extends PlayerImpl {
             AvailableModes:
             for (Mode mode : modes.getAvailableModes(source, game)) {
                 int timesSelected = 0;
-                for (Mode selectedMode : modes.getSelectedModes()) {
+                for (UUID selectedModeId : modes.getSelectedModes()) {
+                    Mode selectedMode = modes.get(selectedModeId);
                     if (mode.getId().equals(selectedMode.getId())) {
                         if (modes.isEachModeMoreThanOnce()) {
                             timesSelected++;
@@ -1348,7 +1364,7 @@ public class HumanPlayer extends PlayerImpl {
                     modeMap.put(mode.getId(), modeText);
                 }
             }
-            if (modeMap.size() > 0) {
+            if (!modeMap.isEmpty()) {
                 boolean done = false;
                 while (!done) {
                     game.fireGetModeEvent(playerId, "Choose Mode", modeMap);
@@ -1458,7 +1474,12 @@ public class HumanPlayer extends PlayerImpl {
 
     protected void updateGameStatePriority(String methodName, Game game) {
         if (game.getState().getPriorityPlayerId() != null) { // don't do it if priority was set to null before (e.g. discard in cleanaup)
-            logger.debug("Setting game priority to " + getId() + " [" + methodName + "]");
+            if (getId() == null) {
+                logger.fatal("Player with no ID: " + name);
+                this.quit(game);
+                return;
+            }
+            logger.debug("Setting game priority to " + getId() + " [" + methodName + ']');
             game.getState().setPriorityPlayerId(getId());
         }
     }

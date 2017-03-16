@@ -36,10 +36,10 @@ import java.util.UUID;
 import mage.MageObject;
 import mage.abilities.costs.Cost;
 import mage.cards.Card;
-import mage.constants.CardType;
 import mage.constants.PhaseStep;
 import mage.constants.TurnPhase;
 import mage.constants.Zone;
+import mage.designations.Designation;
 import mage.game.ExileZone;
 import mage.game.Game;
 import mage.game.GameState;
@@ -80,10 +80,10 @@ public class GameView implements Serializable {
     private final PhaseStep step;
     private final UUID activePlayerId;
     private String activePlayerName = "";
-    private String priorityPlayerName = "";
+    private String priorityPlayerName;
     private final int turn;
     private boolean special = false;
-    private final boolean isPlayer;
+    private final boolean isPlayer; // false = watching user
     private final int spellsCastCurrentTurn;
     private final boolean rollbackTurnsAllowed;
 
@@ -116,7 +116,7 @@ public class GameView implements Serializable {
                     } else {
                         stack.put(stackObject.getId(), new StackAbilityView(game, (StackAbility) stackObject, "", new CardView(card)));
                     }
-                    if (card.canTransform()) {
+                    if (card.isTransformable()) {
                         updateLatestCardView(game, card, stackObject.getId());
                     }
                     checkPaid(stackObject.getId(), (StackAbility) stackObject);
@@ -126,30 +126,28 @@ public class GameView implements Serializable {
                         stack.put(stackObject.getId(), new StackAbilityView(game, (StackAbility) stackObject, token.getName(), new CardView(token)));
                         checkPaid(stackObject.getId(), (StackAbility) stackObject);
                     } else if (object instanceof Emblem) {
-                        Card sourceCard = game.getCard(((Emblem) object).getSourceId());
-                        CardView cardView;
-                        if (sourceCard != null) {
-                            if (!sourceCard.getCardType().contains(CardType.PLANESWALKER)) {
-                                if (sourceCard.getSecondCardFace() != null) {
-                                    sourceCard = sourceCard.getSecondCardFace();
-                                }
-                            }
-                            ((StackAbility) stackObject).setName("Emblem " + sourceCard.getName());
-                            ((StackAbility) stackObject).setExpansionSetCode(sourceCard.getExpansionSetCode());
-                            cardView = new CardView(new EmblemView(((Emblem) object), sourceCard));
-                        } else {
-                            cardView = new CardView(new EmblemView((Emblem) object));
-                        }
+                        CardView cardView = new CardView(new EmblemView((Emblem) object));
+                        // Card sourceCard = (Card) ((Emblem) object).getSourceObject();
+                        ((StackAbility) stackObject).setName(((Emblem) object).getName());
+                        // ((StackAbility) stackObject).setExpansionSetCode(sourceCard.getExpansionSetCode());
                         stack.put(stackObject.getId(),
                                 new StackAbilityView(game, (StackAbility) stackObject, object.getName(), cardView));
                         checkPaid(stackObject.getId(), ((StackAbility) stackObject));
+                    } else if (object instanceof Designation) {
+                        Designation designation = (Designation) game.getObject(object.getId());
+                        if (designation != null) {
+                            stack.put(stackObject.getId(), new CardView(designation, (StackAbility) stackObject));
+                        } else {
+                            LOGGER.fatal("Designation object not found: " + object.getName() + ' ' + object.toString() + ' ' + object.getClass().toString());
+                        }
+
                     } else if (object instanceof StackAbility) {
                         StackAbility stackAbility = ((StackAbility) object);
                         stackAbility.newId();
                         stack.put(stackObject.getId(), new CardView(((StackAbility) stackObject)));
                         checkPaid(stackObject.getId(), ((StackAbility) stackObject));
                     } else {
-                        LOGGER.fatal("Object can't be cast to StackAbility: " + object.getName() + " " + object.toString() + " " + object.getClass().toString());
+                        LOGGER.fatal("Object can't be cast to StackAbility: " + object.getName() + ' ' + object.toString() + ' ' + object.getClass().toString());
                     }
                 } else {
                     // can happen if a player times out while ability is on the stack
@@ -178,18 +176,22 @@ public class GameView implements Serializable {
         } else {
             this.activePlayerName = "";
         }
+        Player priorityPlayer = null;
         if (state.getPriorityPlayerId() != null) {
-            this.priorityPlayerName = state.getPlayer(state.getPriorityPlayerId()).getName();
+            priorityPlayer = state.getPlayer(state.getPriorityPlayerId());
+            this.priorityPlayerName = priorityPlayer != null ? priorityPlayer.getName() : "";
         } else {
             this.priorityPlayerName = "";
         }
         for (CombatGroup combatGroup : state.getCombat().getGroups()) {
             combat.add(new CombatGroupView(combatGroup, game));
         }
-        if (isPlayer) {
-            // has only to be set for active palyer with priority (e.g. pay mana by delve or Quenchable Fire special action)
-            if (createdForPlayer != null && createdForPlayerId != null && createdForPlayerId.equals(state.getPriorityPlayerId())) {
-                this.special = state.getSpecialActions().getControlledBy(state.getPriorityPlayerId(), createdForPlayer.isInPayManaMode()).size() > 0;
+        if (isPlayer) { // no watcher
+            // has only to be set for active player with priority (e.g. pay mana by delve or Quenchable Fire special action)
+            if (priorityPlayer != null && createdForPlayer != null && createdForPlayerId != null && createdForPlayer.isGameUnderControl()
+                    && (createdForPlayerId.equals(priorityPlayer.getId()) // player controls the turn
+                    || createdForPlayer.getPlayersUnderYourControl().contains(priorityPlayer.getId()))) { // player controls active players turn
+                this.special = !state.getSpecialActions().getControlledBy(priorityPlayer.getId(), priorityPlayer.isInPayManaMode()).isEmpty();
             }
         } else {
             this.special = false;
@@ -230,7 +232,7 @@ public class GameView implements Serializable {
     }
 
     private void updateLatestCardView(Game game, Card card, UUID stackId) {
-        if (!card.canTransform()) {
+        if (!card.isTransformable()) {
             return;
         }
         Permanent permanent = game.getPermanent(card.getId());

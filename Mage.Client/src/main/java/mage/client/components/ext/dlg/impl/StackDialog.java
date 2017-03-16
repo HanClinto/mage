@@ -32,11 +32,11 @@ public class StackDialog extends IDialogPanel {
     private HoverButton jButtonResponse = null;
 
     private JLayeredPane jLayeredPane;
-    private FeedbackPanel feedbackPanel;
+    private final FeedbackPanel feedbackPanel;
     
-    private UUID gameId;
+    private final UUID gameId;
 
-    private class CustomLabel extends JLabel {
+    private static class CustomLabel extends JLabel {
 
         @Override
         public void paintComponent(Graphics g) {
@@ -51,7 +51,7 @@ public class StackDialog extends IDialogPanel {
         }
 
         private static final long serialVersionUID = 1L;
-    };
+    }
 
     /**
      * This is the default constructor
@@ -124,7 +124,7 @@ public class StackDialog extends IDialogPanel {
                 card = tmp;
             }
 
-            MageCard cardImg = Plugins.getInstance().getMageCard(card, bigCard, getCardDimension(), gameId, true);
+            MageCard cardImg = Plugins.getInstance().getMageCard(card, bigCard, getCardDimension(), gameId, true, true);
             //cardImg.setBorder(BorderFactory.createLineBorder(Color.red));
             cardImg.setLocation(dx, dy);
 

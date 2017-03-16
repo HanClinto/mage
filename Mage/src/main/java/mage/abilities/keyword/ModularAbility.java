@@ -93,7 +93,7 @@ public class ModularAbility extends DiesTriggeredAbility {
         if (sunburst) {
             sb.append("-Sunburst <i>(This enters the battlefield with a +1/+1 counter on it for each color of mana spent to cast it. When it dies, you may put its +1/+1 counters on target artifact creature.)</i>");
         } else {
-            sb.append(" ").append(amount).append(" <i>(This enters the battlefield with ")
+            sb.append(' ').append(amount).append(" <i>(This enters the battlefield with ")
                     .append(CardUtil.numberToText(amount, "a"))
                     .append(" +1/+1 counter").append(amount != 1 ? "s" : "")
                     .append(" on it. When it dies, you may put its +1/+1 counters on target artifact creature.)</i>");
@@ -159,7 +159,7 @@ class ModularDistributeCounterEffect extends OneShotEffect {
         if (sourcePermanent != null && targetArtifact != null && player != null) {
             int numberOfCounters = sourcePermanent.getCounters(game).getCount(CounterType.P1P1);
             if (numberOfCounters > 0) {
-                targetArtifact.addCounters(CounterType.P1P1.createInstance(numberOfCounters), game);
+                targetArtifact.addCounters(CounterType.P1P1.createInstance(numberOfCounters), source, game);
             }
             return true;
         }

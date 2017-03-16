@@ -65,7 +65,6 @@ import mage.game.draft.DraftOptions;
 import mage.game.draft.DraftOptions.TimingOption;
 import mage.game.tournament.LimitedOptions;
 import mage.game.tournament.TournamentOptions;
-import mage.remote.Session;
 import mage.view.GameTypeView;
 import mage.view.TableView;
 import mage.view.TournamentTypeView;
@@ -87,8 +86,8 @@ public class NewTournamentDialog extends MageDialog {
     private JTextArea txtRandomPacks;
     private final List<TournamentPlayerPanel> players = new ArrayList<>();
     private final List<JComboBox> packs = new ArrayList<>();
-    private final int CONSTRUCTION_TIME_MIN = 6;
-    private final int CONSTRUCTION_TIME_MAX = 30;
+    private static final int CONSTRUCTION_TIME_MIN = 6;
+    private static final int CONSTRUCTION_TIME_MAX = 30;
     private boolean isRandom = false;
     private boolean isRichMan = false;
     private String cubeFromDeckFilename = "";
@@ -170,6 +169,8 @@ public class NewTournamentDialog extends MageDialog {
         pnlPacks = new javax.swing.JPanel();
         lblNbrPlayers = new javax.swing.JLabel();
         spnNumPlayers = new javax.swing.JSpinner();
+        lblNbrSeats = new javax.swing.JLabel();
+        spnNumSeats = new javax.swing.JSpinner();
         pnlDraftOptions = new javax.swing.JPanel();
         jLabel6 = new javax.swing.JLabel();
         cbDraftTiming = new javax.swing.JComboBox();
@@ -213,11 +214,7 @@ public class NewTournamentDialog extends MageDialog {
         lblTournamentType.setText("Tournament Type:");
 
         cbTournamentType.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        cbTournamentType.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbTournamentTypeActionPerformed(evt);
-            }
-        });
+        cbTournamentType.addActionListener(evt -> cbTournamentTypeActionPerformed(evt));
 
         lbDeckType.setText("Deck Type:");
         lbDeckType.setFocusable(false);
@@ -225,11 +222,7 @@ public class NewTournamentDialog extends MageDialog {
         lblGameType.setText("Game Type:");
         lblGameType.setFocusable(false);
 
-        cbGameType.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbGameTypeActionPerformed(evt);
-            }
-        });
+        cbGameType.addActionListener(evt -> cbGameTypeActionPerformed(evt));
 
         lblFreeMulligans.setText("Free Mulligans:");
 
@@ -238,30 +231,18 @@ public class NewTournamentDialog extends MageDialog {
         lblNumWins.setText("Wins:");
 
         spnNumWins.setToolTipText("To win a match a player has to win this number of games.");
-        spnNumWins.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                spnNumWinsnumPlayersChanged(evt);
-            }
-        });
+        spnNumWins.addChangeListener(evt -> spnNumWinsnumPlayersChanged(evt));
 
         lblDraftCube.setText("Draft Cube:");
 
         cbDraftCube.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        cbDraftCube.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbDraftCubeActionPerformed(evt);
-            }
-        });
+        cbDraftCube.addActionListener(evt -> cbDraftCubeActionPerformed(evt));
 
         lblNumRounds.setText("Number of Swiss Rounds:");
         lblNumRounds.setToolTipText("<html>The number of rounds the swiss tournament has in total.<br>\nThe tournaments ends after that number of rounds or<br> \nif there are less than two players left in the tournament.");
 
         spnNumRounds.setToolTipText("<html>The number of rounds the swiss tournament has in total.<br>\nThe tournaments ends after that number of rounds or<br> \nif there are less than two players left in the tournament.");
-        spnNumRounds.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                spnNumRoundsnumPlayersChanged(evt);
-            }
-        });
+        spnNumRounds.addChangeListener(evt -> spnNumRoundsnumPlayersChanged(evt));
 
         lblPacks.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         lblPacks.setText("Packs");
@@ -271,20 +252,16 @@ public class NewTournamentDialog extends MageDialog {
 
         lblNbrPlayers.setText("Players:");
 
-        spnNumPlayers.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                spnNumPlayersStateChanged(evt);
-            }
-        });
+        spnNumPlayers.addChangeListener(evt -> spnNumPlayersStateChanged(evt));
+
+        lblNbrSeats.setText("Seats:");
+
+        spnNumSeats.addChangeListener(evt -> spnNumSeatsStateChanged(evt));
 
         jLabel6.setText("Timing:");
 
         cbDraftTiming.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        cbDraftTiming.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cbDraftTimingActionPerformed(evt);
-            }
-        });
+        cbDraftTiming.addActionListener(evt -> cbDraftTimingActionPerformed(evt));
 
         javax.swing.GroupLayout pnlDraftOptionsLayout = new javax.swing.GroupLayout(pnlDraftOptions);
         pnlDraftOptions.setLayout(pnlDraftOptionsLayout);
@@ -338,18 +315,10 @@ public class NewTournamentDialog extends MageDialog {
         );
 
         btnOk.setText("OK");
-        btnOk.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnOkActionPerformed(evt);
-            }
-        });
+        btnOk.addActionListener(evt -> btnOkActionPerformed(evt));
 
         btnCancel.setText("Cancel");
-        btnCancel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCancelActionPerformed(evt);
-            }
-        });
+        btnCancel.addActionListener(evt -> btnCancelActionPerformed(evt));
 
         pnlRandomPacks.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         pnlRandomPacks.setToolTipText("");
@@ -358,6 +327,8 @@ public class NewTournamentDialog extends MageDialog {
         lblQuitRatio.setText("Allowed quit %:");
 
         spnQuitRatio.setToolTipText("Players with quit % more than this value can't join this table");
+        spnNumSeats.setToolTipText("The number of seats for each duel. If more than 2, will set number of wins to 1");
+        spnNumPlayers.setToolTipText("The total number of players who will draft");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -373,7 +344,11 @@ public class NewTournamentDialog extends MageDialog {
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(lblNbrPlayers)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(spnNumPlayers, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(spnNumPlayers, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(lblNbrSeats)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(spnNumSeats, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addComponent(lblPacks)
                             .addComponent(lblPlayer1))
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -504,6 +479,8 @@ public class NewTournamentDialog extends MageDialog {
                                 .addComponent(lblNumRounds))
                             .addComponent(lblNbrPlayers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(spnNumPlayers)
+                            .addComponent(lblNbrSeats, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(spnNumSeats)
                             .addComponent(pnlDraftOptions, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(lblPlayer1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -533,7 +510,8 @@ public class NewTournamentDialog extends MageDialog {
 
     private void btnOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOkActionPerformed
         TournamentTypeView tournamentType = (TournamentTypeView) cbTournamentType.getSelectedItem();
-        TournamentOptions tOptions = new TournamentOptions(this.txtName.getText());
+        int numSeats = (Integer)this.spnNumSeats.getValue();
+        TournamentOptions tOptions = new TournamentOptions(this.txtName.getText(), "", numSeats);
         tOptions.setTournamentType(tournamentType.getName());
         tOptions.setPassword(txtPassword.getText());
         tOptions.getPlayerTypes().add("Human");
@@ -559,14 +537,15 @@ public class NewTournamentDialog extends MageDialog {
             tOptions.getLimitedOptions().setIsRandom(tournamentType.isRandom());
             if (tournamentType.isCubeBooster()) {
                 tOptions.getLimitedOptions().setDraftCubeName(this.cbDraftCube.getSelectedItem().toString());
-                if (!(cubeFromDeckFilename.equals(""))) {
+                if (!(cubeFromDeckFilename.isEmpty())) {
                     Deck cubeFromDeck = new Deck();                   
                     try {
                         cubeFromDeck = Deck.load(DeckImporterUtil.importDeck(cubeFromDeckFilename), true, true);
                     } catch (GameException e1) {
                         JOptionPane.showMessageDialog(MageFrame.getDesktop(), e1.getMessage(), "Error loading deck", JOptionPane.ERROR_MESSAGE); 
                     }
-                    if (cubeFromDeck != null) { 
+                    if (cubeFromDeck != null) {
+                        cubeFromDeck.clearLayouts();
                         tOptions.getLimitedOptions().setCubeFromDeck(cubeFromDeck);
 		    }
                 }
@@ -653,13 +632,51 @@ public class NewTournamentDialog extends MageDialog {
         this.hideDialog();
     }//GEN-LAST:event_btnCancelActionPerformed
 
+    private void updateNumSeats() {
+        int numPlayers = (Integer)this.spnNumPlayers.getValue();
+        int numSeats = (Integer)this.spnNumSeats.getValue();
+
+        if (numSeats > 2) {
+            TournamentTypeView tournamentType = (TournamentTypeView) cbTournamentType.getSelectedItem();
+            if (numSeats >= tournamentType.getMinPlayers()) {
+                createPlayers(numSeats - 1);
+                spnNumPlayers.setValue(numSeats);
+            } else {
+                numSeats = tournamentType.getMinPlayers();
+                createPlayers(numSeats - 1);
+                spnNumPlayers.setValue(numSeats);
+                spnNumSeats.setValue(numSeats);
+            }
+            spnNumWins.setValue(1);
+        }
+    }
+
     private void spnNumPlayersStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spnNumPlayersStateChanged
-        int numPlayers = (Integer)this.spnNumPlayers.getValue() - 1;
-        createPlayers(numPlayers);
+        int numPlayers = (Integer)this.spnNumPlayers.getValue();
+        createPlayers(numPlayers - 1);
+        int numSeats = (Integer)this.spnNumSeats.getValue();
+        if (numSeats > 2 && numPlayers != numSeats) {
+            updateNumSeats();
+        }
     }//GEN-LAST:event_spnNumPlayersStateChanged
 
+    private void spnNumSeatsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spnNumSeatsStateChanged
+        int numSeats = (Integer)this.spnNumSeats.getValue();
+        if (numSeats > 2) {
+            this.spnNumPlayers.setEnabled(false);
+        } else {
+            this.spnNumPlayers.setEnabled(true);
+        }
+        updateNumSeats();
+    }//GEN-LAST:event_spnNumSeatsStateChanged
+ 
+
     private void spnNumWinsnumPlayersChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spnNumWinsnumPlayersChanged
-        // TODO add your handling code here:
+        int numSeats = (Integer)this.spnNumSeats.getValue();
+        int numWins = (Integer)this.spnNumSeats.getValue();
+        if (numSeats > 2) {
+            spnNumWins.setValue(1);
+        }
     }//GEN-LAST:event_spnNumWinsnumPlayersChanged
 
     private JFileChooser fcSelectDeck = null;
@@ -725,6 +742,8 @@ public class NewTournamentDialog extends MageDialog {
         this.spnNumPlayers.setModel(new SpinnerNumberModel(numPlayers, tournamentType.getMinPlayers(), tournamentType.getMaxPlayers(), 1));
         this.spnNumPlayers.setEnabled(tournamentType.getMinPlayers() != tournamentType.getMaxPlayers());
         createPlayers((Integer) spnNumPlayers.getValue() - 1);
+
+        this.spnNumSeats.setModel(new SpinnerNumberModel(2, 2, tournamentType.getMaxPlayers(), 1));
 
         if (tournamentType.isLimited()) {
             this.isRandom = tournamentType.isRandom();
@@ -807,17 +826,16 @@ public class NewTournamentDialog extends MageDialog {
             txtRandomPacks.setEnabled(false);
             txtRandomPacks.setLineWrap(true);
             String randomPrefs = PreferencesDialog.getCachedValue(PreferencesDialog.KEY_NEW_TOURNAMENT_PACKS_RANDOM_DRAFT, "");
-            if (randomPrefs.length() > 0) {
+            if (!randomPrefs.isEmpty()) {
                 txtRandomPacks.setText(randomPrefs);
-                ArrayList<String> theList = new ArrayList<>();
-                theList.addAll(Arrays.asList(randomPrefs.split(";")));
+                ArrayList<String> theList = new ArrayList<>(Arrays.asList(randomPrefs.split(";")));
                 randomPackSelector.setSelectedPacks(theList);
             } else {
                 ExpansionInfo[] allExpansions = ExpansionRepository.instance.getWithBoostersSortedByReleaseDate();
                 StringBuilder packList = new StringBuilder();
                 for (ExpansionInfo exp : allExpansions) {
                     packList.append(exp.getCode());
-                    packList.append(";");
+                    packList.append(';');
                 }
                 txtRandomPacks.setText(packList.toString());
             }
@@ -827,13 +845,7 @@ public class NewTournamentDialog extends MageDialog {
             btnSelectRandomPacks.setAlignmentX(Component.LEFT_ALIGNMENT);
             btnSelectRandomPacks.setText("Select packs to be included in the pool");
             btnSelectRandomPacks.setToolTipText(RandomPacksSelectorDialog.randomDraftDescription);
-            btnSelectRandomPacks.addActionListener(new java.awt.event.ActionListener() {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent evt) {
-                    showRandomPackSelectorDialog();
-
-                }
-            });
+            btnSelectRandomPacks.addActionListener(evt -> showRandomPackSelectorDialog());
             pnlRandomPacks.add(btnSelectRandomPacks);
         }
         this.pack();
@@ -847,7 +859,7 @@ public class NewTournamentDialog extends MageDialog {
         StringBuilder packList = new StringBuilder();
         for (String str : randomPackSelector.getSelectedPacks()) {
             packList.append(str);
-            packList.append(";");
+            packList.append(';');
         }
         this.txtRandomPacks.setText(packList.toString());
         this.pack();
@@ -865,12 +877,7 @@ public class NewTournamentDialog extends MageDialog {
             pack.setModel(new DefaultComboBoxModel(ExpansionRepository.instance.getWithBoostersSortedByReleaseDate()));
             pnlPacks.add(pack);
             packs.add(pack);
-            pack.addActionListener(new java.awt.event.ActionListener() {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent evt) {
-                    packActionPerformed(evt);
-                }
-            });
+            pack.addActionListener(evt -> packActionPerformed(evt));
         }
         this.pack();
         this.revalidate();
@@ -914,16 +921,15 @@ public class NewTournamentDialog extends MageDialog {
 
     }
 
+
+
     private void drawPlayers() {
         this.pnlOtherPlayers.removeAll();
         for (TournamentPlayerPanel panel: players) {
             this.pnlOtherPlayers.add(panel);
-            panel.getPlayerType().addActionListener(new java.awt.event.ActionListener() {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent evt) {
-                    if (!automaticChange) {
-                        playerActionPerformed(evt);
-                    }
+            panel.getPlayerType().addActionListener(evt -> {
+                if (!automaticChange) {
+                    playerActionPerformed(evt);
                 }
             });
         }
@@ -1019,7 +1025,7 @@ public class NewTournamentDialog extends MageDialog {
     }
 
     private void loadBoosterPacks(String packString) {
-        if (packString.length()>0) {
+        if (!packString.isEmpty()) {
             String[] packsArray = packString.substring(1, packString.length() - 1).split(",");
             int packNumber = 0;
             for (String pack : packsArray ){
@@ -1081,7 +1087,7 @@ public class NewTournamentDialog extends MageDialog {
                 StringBuilder packlist = new StringBuilder();
                 for (String pack : this.randomPackSelector.getSelectedPacks()){
                     packlist.append(pack);
-                    packlist.append(";");
+                    packlist.append(';');
                 }
                 PreferencesDialog.saveValue(PreferencesDialog.KEY_NEW_TOURNAMENT_PACKS_RANDOM_DRAFT, packlist.toString());
             }
@@ -1119,6 +1125,7 @@ public class NewTournamentDialog extends MageDialog {
     private javax.swing.JLabel lblGameType;
     private javax.swing.JLabel lblName;
     private javax.swing.JLabel lblNbrPlayers;
+    private javax.swing.JLabel lblNbrSeats;
     private javax.swing.JLabel lblNumRounds;
     private javax.swing.JLabel lblNumWins;
     private javax.swing.JLabel lblPacks;
@@ -1135,6 +1142,7 @@ public class NewTournamentDialog extends MageDialog {
     private javax.swing.JSpinner spnConstructTime;
     private javax.swing.JSpinner spnFreeMulligans;
     private javax.swing.JSpinner spnNumPlayers;
+    private javax.swing.JSpinner spnNumSeats;
     private javax.swing.JSpinner spnNumRounds;
     private javax.swing.JSpinner spnNumWins;
     private javax.swing.JSpinner spnQuitRatio;

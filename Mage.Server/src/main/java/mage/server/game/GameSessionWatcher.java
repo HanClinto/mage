@@ -30,7 +30,9 @@ package mage.server.game;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+
 import mage.game.Game;
 import mage.game.Table;
 import mage.interfaces.callback.ClientCallback;
@@ -44,17 +46,16 @@ import mage.view.SimpleCardsView;
 import org.apache.log4j.Logger;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class GameSessionWatcher {
 
     protected final static Logger logger = Logger.getLogger(GameSessionWatcher.class);
 
-    protected UUID userId;
-    protected Game game;
+    protected final UUID userId;
+    protected final Game game;
     protected boolean killed = false;
-    protected boolean isPlayer;
+    protected final boolean isPlayer;
 
     public GameSessionWatcher(UUID userId, Game game, boolean isPlayer) {
         this.userId = userId;
@@ -64,9 +65,9 @@ public class GameSessionWatcher {
 
     public boolean init() {
         if (!killed) {
-            User user = UserManager.getInstance().getUser(userId);
-            if (user != null) {
-                user.fireCallback(new ClientCallback("gameInit", game.getId(), getGameView()));
+            Optional<User> user = UserManager.getInstance().getUser(userId);
+            if (user.isPresent()) {
+                user.get().fireCallback(new ClientCallback("gameInit", game.getId(), getGameView()));
                 return true;
             }
         }
@@ -75,55 +76,45 @@ public class GameSessionWatcher {
 
     public void update() {
         if (!killed) {
-            User user = UserManager.getInstance().getUser(userId);
-            if (user != null) {
-                user.fireCallback(new ClientCallback("gameUpdate", game.getId(), getGameView()));
-            }
+            UserManager.getInstance().getUser(userId).ifPresent(user -> user.fireCallback(new ClientCallback("gameUpdate", game.getId(), getGameView())));
         }
+
     }
 
     public void inform(final String message) {
         if (!killed) {
-            User user = UserManager.getInstance().getUser(userId);
-            if (user != null) {
-                user.fireCallback(new ClientCallback("gameInform", game.getId(), new GameClientMessage(getGameView(), message)));
-            }
+            UserManager.getInstance().getUser(userId).ifPresent(user -> user.fireCallback(new ClientCallback("gameInform", game.getId(), new GameClientMessage(getGameView(), message))));
         }
+
     }
 
     public void informPersonal(final String message) {
         if (!killed) {
-            User user = UserManager.getInstance().getUser(userId);
-            if (user != null) {
-                user.fireCallback(new ClientCallback("gameInformPersonal", game.getId(), new GameClientMessage(getGameView(), message)));
-            }
+            UserManager.getInstance().getUser(userId).ifPresent(user -> user.fireCallback(new ClientCallback("gameInformPersonal", game.getId(), new GameClientMessage(getGameView(), message))));
         }
+
     }
 
     public void gameOver(final String message) {
         if (!killed) {
-            User user = UserManager.getInstance().getUser(userId);
-            if (user != null) {
+            UserManager.getInstance().getUser(userId).ifPresent(user -> {
                 user.removeGameWatchInfo(game.getId());
                 user.fireCallback(new ClientCallback("gameOver", game.getId(), message));
-            }
+            });
         }
     }
 
     /**
      * Cleanup if Session ends
-     * 
      */
-    public void CleanUp() {
+    public void cleanUp() {
 
     }
 
     public void gameError(final String message) {
         if (!killed) {
-            User user = UserManager.getInstance().getUser(userId);
-            if (user != null) {
-                user.fireCallback(new ClientCallback("gameError", game.getId(), message));
-            }
+            UserManager.getInstance().getUser(userId).ifPresent(user -> user.fireCallback(new ClientCallback("gameError", game.getId(), message)));
+
         }
     }
 
@@ -140,13 +131,14 @@ public class GameSessionWatcher {
 
     protected void processWatchedHands(UUID userId, GameView gameView) {
         Map<String, SimpleCardsView> handCards = new HashMap<>();
-        for (Player player: game.getPlayers().values()) {
+        for (Player player : game.getPlayers().values()) {
             if (player.hasUserPermissionToSeeHand(userId)) {
                 handCards.put(player.getName(), new SimpleCardsView(player.getHand().getCards(game), true));
                 gameView.setWatchedHands(handCards);
             }
         }
     }
+
     public GameEndView getGameEndView(UUID playerId, Table table) {
         return new GameEndView(game.getState(), game, playerId, table);
     }
@@ -154,5 +146,5 @@ public class GameSessionWatcher {
     public boolean isPlayer() {
         return isPlayer;
     }
-       
+
 }

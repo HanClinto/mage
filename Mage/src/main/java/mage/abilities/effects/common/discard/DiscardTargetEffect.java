@@ -27,6 +27,7 @@
  */
 package mage.abilities.effects.common.discard;
 
+import java.util.UUID;
 import mage.abilities.Ability;
 import mage.abilities.Mode;
 import mage.abilities.dynamicvalue.DynamicValue;
@@ -85,12 +86,13 @@ public class DiscardTargetEffect extends OneShotEffect {
 
     @Override
     public boolean apply(Game game, Ability source) {
-        Player player = game.getPlayer(targetPointer.getFirst(game, source));
-        if (player != null) {
-            player.discard(amount.calculate(game, source, this), randomDiscard, source, game);
-            return true;
+        for (UUID targetPlayerId : targetPointer.getTargets(game, source)) {
+            Player player = game.getPlayer(targetPlayerId);
+            if (player != null) {
+                player.discard(amount.calculate(game, source, this), randomDiscard, source, game);
+            }
         }
-        return false;
+        return true;
     }
 
     @Override
@@ -99,7 +101,7 @@ public class DiscardTargetEffect extends OneShotEffect {
             return staticText;
         }
         StringBuilder sb = new StringBuilder();
-        if(mode.getTargets().isEmpty()){
+        if (mode.getTargets().isEmpty()) {
             sb.append("that player");
         } else {
             sb.append("target ").append(mode.getTargets().get(0).getTargetName());
@@ -114,7 +116,7 @@ public class DiscardTargetEffect extends OneShotEffect {
             sb.append(" at random");
         }
         String message = amount.getMessage();
-        if (message.length() > 0) {
+        if (!message.isEmpty()) {
             sb.append(" for each ");
         }
         sb.append(message);

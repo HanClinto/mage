@@ -3,6 +3,7 @@ package org.mage.plugins.card.utils;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.prefs.Preferences;
 import mage.client.MageFrame;
 import mage.client.constants.Constants;
@@ -14,7 +15,7 @@ import org.apache.log4j.Logger;
 import org.mage.plugins.card.images.CardDownloadData;
 import org.mage.plugins.card.properties.SettingsManager;
 
-public class CardImageUtils {
+public final class CardImageUtils {
 
     private static final HashMap<CardDownloadData, String> pathCache = new HashMap<>();
     private static final Logger log = Logger.getLogger(CardImageUtils.class);
@@ -42,7 +43,7 @@ public class CardImageUtils {
                 return filePath;
             }
         }
-        log.warn("Token image file not found: " + card.getTokenSetCode() + " - " + card.getName());
+        log.warn("Token image file not found: " + card.getSet() + " - " + card.getTokenSetCode() + " - " + card.getName());
         return null;
     }
 
@@ -117,16 +118,17 @@ public class CardImageUtils {
             return buildPath(imagesDir, set);
         }
     }
-    
+
     public static String getImageBasePath() {
         String useDefault = PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_USE_DEFAULT, "true");
-        String imagesPath = useDefault.equals("true") ? Constants.IO.imageBaseDir : PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_PATH, null);
-        if (!imagesPath.endsWith(TFile.separator)) {
+        String imagesPath = Objects.equals(useDefault, "true") ? Constants.IO.imageBaseDir : PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_PATH, null);
+
+        if (imagesPath != null && !imagesPath.endsWith(TFile.separator)) {
             imagesPath += TFile.separator;
         }
         return imagesPath;
     }
-    
+
     public static String getTokenBasePath() {
         String imagesPath = getImageBasePath();
 
@@ -161,16 +163,16 @@ public class CardImageUtils {
 
     public static String generateImagePath(CardDownloadData card) {
         String useDefault = PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_USE_DEFAULT, "true");
-        String imagesPath = useDefault.equals("true") ? null : PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_PATH, null);
+        String imagesPath = Objects.equals(useDefault, "true") ? null : PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_PATH, null);
 
         String imageDir = getImageDir(card, imagesPath);
         String imageName;
 
-        String type = card.getType() != 0 ? " " + Integer.toString(card.getType()) : "";
-        String name = card.getName().replace(":", "").replace("//", "-");
+        String type = card.getType() != 0 ? ' ' + Integer.toString(card.getType()) : "";
+        String name = card.getFileName().isEmpty() ? card.getName().replace(":", "").replace("//", "-") : card.getFileName();
 
         if (card.getUsesVariousArt()) {
-            imageName = name + "." + card.getCollectorId() + ".full.jpg";
+            imageName = name + '.' + card.getCollectorId() + ".full.jpg";
         } else {
             imageName = name + type + ".full.jpg";
         }
@@ -189,7 +191,7 @@ public class CardImageUtils {
 
     public static String generateTokenDescriptorImagePath(CardDownloadData card) {
         String useDefault = PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_USE_DEFAULT, "true");
-        String imagesPath = useDefault.equals("true") ? null : PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_PATH, null);
+        String imagesPath = Objects.equals(useDefault, "true") ? null : PreferencesDialog.getCachedValue(PreferencesDialog.KEY_CARD_IMAGES_PATH, null);
 
         String straightImageFile = getTokenDescriptorImagePath(card);
         TFile file = new TFile(straightImageFile);

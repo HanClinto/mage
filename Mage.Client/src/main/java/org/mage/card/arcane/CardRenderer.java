@@ -14,8 +14,6 @@ import java.awt.Paint;
 import java.awt.Polygon;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-
-import mage.abilities.Ability;
 import mage.client.dialog.PreferencesDialog;
 import mage.constants.AbilityType;
 import mage.constants.CardType;
@@ -23,7 +21,6 @@ import mage.utils.CardUtil;
 import mage.view.CardView;
 import mage.view.CounterView;
 import mage.view.PermanentView;
-import org.apache.log4j.Logger;
 
 /**
  * @author stravant@gmail.com
@@ -57,8 +54,6 @@ import org.apache.log4j.Logger;
  *
  */
 public abstract class CardRenderer {
-
-    private static final Logger LOGGER = Logger.getLogger(CardPanel.class);
 
     ///////////////////////////////////////////////////////////////////////////
     // Common layout metrics between all cards
@@ -96,7 +91,7 @@ public abstract class CardRenderer {
     }, 4);
 
     // Paint for a card back
-    public static Paint BG_TEXTURE_CARDBACK = new Color(153, 102, 51);
+    public static final Paint BG_TEXTURE_CARDBACK = new Color(153, 102, 51);
 
     // The size of the card
     protected int cardWidth;
@@ -107,18 +102,18 @@ public abstract class CardRenderer {
     protected boolean isSelected;
 
     // Radius of the corners of the cards
-    protected static float CORNER_RADIUS_FRAC = 0.1f; //x cardWidth
-    protected static int CORNER_RADIUS_MIN = 3;
+    protected static final float CORNER_RADIUS_FRAC = 0.1f; //x cardWidth
+    protected static final int CORNER_RADIUS_MIN = 3;
     protected int cornerRadius;
 
     // The inset of the actual card from the black / white border around it
-    protected static float BORDER_WIDTH_FRAC = 0.03f; //x cardWidth
-    protected static float BORDER_WIDTH_MIN = 2;
+    protected static final float BORDER_WIDTH_FRAC = 0.03f; //x cardWidth
+    protected static final float BORDER_WIDTH_MIN = 2;
     protected int borderWidth;
 
     // The parsed text of the card
-    protected ArrayList<TextboxRule> textboxRules = new ArrayList<>();
-    protected ArrayList<TextboxRule> textboxKeywords = new ArrayList<>();
+    protected final ArrayList<TextboxRule> textboxRules = new ArrayList<>();
+    protected final ArrayList<TextboxRule> textboxKeywords = new ArrayList<>();
 
     // The Construtor
     // The constructor should prepare all of the things that it can
@@ -172,11 +167,12 @@ public abstract class CardRenderer {
     }
 
     /**
-     * How far does a card have to be spaced down from
-     * a rendered card to show it's entire name line?
-     * This function is a bit of a hack, as different card faces need
-     * slightly different spacing, but we need it in a static context
-     * so that spacing is consistent in GY / deck views etc.
+     * How far does a card have to be spaced down from a rendered card to show
+     * it's entire name line? This function is a bit of a hack, as different
+     * card faces need slightly different spacing, but we need it in a static
+     * context so that spacing is consistent in GY / deck views etc.
+     *
+     * @param cardWidth
      * @return
      */
     public static int getCardTopHeight(int cardWidth) {
@@ -187,7 +183,7 @@ public abstract class CardRenderer {
                 BOX_HEIGHT_MIN,
                 BOX_HEIGHT_FRAC * cardWidth * 1.4f);
         int borderWidth = getBorderWidth(cardWidth);
-        return 2*borderWidth + boxHeight;
+        return 2 * borderWidth + boxHeight;
     }
 
     // The Draw Method
@@ -271,14 +267,19 @@ public abstract class CardRenderer {
                 // Don't render loyalty, we do that in the bottom corner
                 if (!v.getName().equals("loyalty")) {
                     Polygon p;
-                    if (v.getName().equals("+1/+1")) {
-                        p = PLUS_COUNTER_POLY;
-                    } else if (v.getName().equals("-1/-1")) {
-                        p = MINUS_COUNTER_POLY;
-                    } else if (v.getName().equals("time")) {
-                        p = TIME_COUNTER_POLY;
-                    } else {
-                        p = OTHER_COUNTER_POLY;
+                    switch (v.getName()) {
+                        case "+1/+1":
+                            p = PLUS_COUNTER_POLY;
+                            break;
+                        case "-1/-1":
+                            p = MINUS_COUNTER_POLY;
+                            break;
+                        case "time":
+                            p = TIME_COUNTER_POLY;
+                            break;
+                        default:
+                            p = OTHER_COUNTER_POLY;
+                            break;
                     }
                     double scale = (0.1 * 0.25 * cardWidth);
                     Graphics2D g2 = (Graphics2D) g.create();
@@ -289,7 +290,7 @@ public abstract class CardRenderer {
                     g2.setColor(Color.black);
                     g2.drawPolygon(p);
                     g2.setFont(new Font("Arial", Font.BOLD, 7));
-                    String cstr = "" + v.getCount();
+                    String cstr = String.valueOf(v.getCount());
                     int strW = g2.getFontMetrics().stringWidth(cstr);
                     g2.drawString(cstr, 5 - strW / 2, 8);
                     g2.dispose();
@@ -366,9 +367,9 @@ public abstract class CardRenderer {
     // Get a string representing the type line
     protected String getCardTypeLine() {
         if (cardView.isAbility()) {
-            if (AbilityType.TRIGGERED.equals(cardView.getAbilityType())) {
+            if (cardView.getAbilityType() == AbilityType.TRIGGERED) {
                 return "Triggered Ability";
-            } else if (AbilityType.ACTIVATED.equals(cardView.getAbilityType())) {
+            } else if (cardView.getAbilityType() == AbilityType.ACTIVATED) {
                 return "Activated Ability";
             } else if (cardView.getAbilityType() == null) {
                 // TODO: Triggered abilities waiting to be put onto the stack have abilityType = null. Figure out why
@@ -379,15 +380,15 @@ public abstract class CardRenderer {
         } else {
             StringBuilder sbType = new StringBuilder();
             for (String superType : cardView.getSuperTypes()) {
-                sbType.append(superType).append(" ");
+                sbType.append(superType).append(' ');
             }
             for (CardType cardType : cardView.getCardTypes()) {
-                sbType.append(cardType.toString()).append(" ");
+                sbType.append(cardType.toString()).append(' ');
             }
-            if (cardView.getSubTypes().size() > 0) {
+            if (!cardView.getSubTypes().isEmpty()) {
                 sbType.append("- ");
                 for (String subType : cardView.getSubTypes()) {
-                    sbType.append(subType).append(" ");
+                    sbType.append(subType).append(' ');
                 }
             }
             return sbType.toString();

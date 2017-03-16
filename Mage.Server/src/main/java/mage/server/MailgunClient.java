@@ -9,7 +9,7 @@ import javax.ws.rs.core.MediaType;
 import mage.server.util.ConfigSettings;
 import org.apache.log4j.Logger;
 
-public class MailgunClient {
+public final class MailgunClient {
 
     private static final Logger logger = Logger.getLogger(Main.class);
 
@@ -23,7 +23,7 @@ public class MailgunClient {
         String domain = ConfigSettings.getInstance().getMailgunDomain();
         WebResource webResource = client.resource("https://api.mailgun.net/v3/" + domain + "/messages");
         MultivaluedMapImpl formData = new MultivaluedMapImpl();
-        formData.add("from", "XMage <postmaster@" + domain + ">");
+        formData.add("from", "XMage <postmaster@" + domain + '>');
         formData.add("to", email);
         formData.add("subject", subject);
         formData.add("text", text);

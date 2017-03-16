@@ -28,10 +28,11 @@
 package mage.game.permanent.token;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import mage.MageInt;
 import mage.constants.CardType;
+import mage.util.RandomUtil;
 
 /**
  *
@@ -42,7 +43,7 @@ public class ServoToken extends Token {
     final static private List<String> tokenImageSets = new ArrayList<>();
 
     static {
-        tokenImageSets.addAll(Arrays.asList("KLD"));
+        tokenImageSets.addAll(Collections.singletonList("KLD"));
     }
 
     public ServoToken() {
@@ -58,6 +59,9 @@ public class ServoToken extends Token {
     @Override
     public void setExpansionSetCodeForImage(String code) {
         super.setExpansionSetCodeForImage(code);
+        if (getOriginalExpansionSetCode() != null && getOriginalExpansionSetCode().equals("KLD")) {
+            this.setTokenType(RandomUtil.nextInt(3) + 1);
+        }
     }
 
     public ServoToken(final ServoToken token) {

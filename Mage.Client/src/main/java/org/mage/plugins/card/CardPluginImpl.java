@@ -68,12 +68,12 @@ public class CardPluginImpl implements CardPlugin {
     private static final float STACK_SPACING_Y = 0.10f;
     private static final float ATTACHMENT_SPACING_Y = 0.13f;
 
-    private int landStackMax = 5;
+    private static final int landStackMax = 5;
     // private int cardWidthMin = 50, cardWidthMax = Constants.CARD_SIZE_FULL.width;
     private int cardWidthMin = (int) GUISizeHelper.battlefieldCardMinDimension.getWidth();
     private int cardWidthMax = (int) GUISizeHelper.battlefieldCardMaxDimension.getWidth();
 
-    private boolean stackVertical = false;
+    private static final boolean stackVertical = false;
 
     private int playAreaWidth, playAreaHeight;
     private int cardWidth, cardHeight;
@@ -125,7 +125,7 @@ public class CardPluginImpl implements CardPlugin {
     @Override
     public MagePermanent getMagePermanent(PermanentView permanent, Dimension dimension, UUID gameId, ActionCallback callback, boolean canBeFoil, boolean loadImage) {
         CardPanel cardPanel = makePanel(permanent, gameId, loadImage, callback, false, dimension);
-        boolean implemented = !permanent.getRarity().equals(Rarity.NA);
+        boolean implemented = permanent.getRarity() != Rarity.NA;
         cardPanel.setShowCastingCost(implemented);
         return cardPanel;
     }
@@ -133,7 +133,7 @@ public class CardPluginImpl implements CardPlugin {
     @Override
     public MagePermanent getMageCard(CardView cardView, Dimension dimension, UUID gameId, ActionCallback callback, boolean canBeFoil, boolean loadImage) {
         CardPanel cardPanel = makePanel(cardView, gameId, loadImage, callback, false, dimension);
-        boolean implemented = cardView.getRarity() != null && !cardView.getRarity().equals(Rarity.NA);
+        boolean implemented = cardView.getRarity() != null && cardView.getRarity() != Rarity.NA;
         cardPanel.setShowCastingCost(implemented);
         return cardPanel;
     }
@@ -179,7 +179,7 @@ public class CardPluginImpl implements CardPlugin {
                         break;
                     }
                     List<CounterView> counters = firstPanel.getOriginalPermanent().getCounters();
-                    if (counters != null && counters.size() > 0) {
+                    if (counters != null && !counters.isEmpty()) {
                         // don't put to first panel if it has counters
                         insertIndex = i;
                         break;
@@ -191,7 +191,7 @@ public class CardPluginImpl implements CardPlugin {
                         continue;
                     }
                     counters = permanent.getOriginalPermanent().getCounters();
-                    if (counters != null && counters.size() > 0) {
+                    if (counters != null && !counters.isEmpty()) {
                         // if a land has counter, put it to the right
                         insertIndex = i + 1;
                         continue;
@@ -422,7 +422,7 @@ public class CardPluginImpl implements CardPlugin {
         return height - cardSpacingY + GUTTER_Y * 2;
     }
 
-    private static enum RowType {
+    private enum RowType {
         land, creature, other, attached;
 
         public boolean isType(MagePermanent card) {
@@ -581,7 +581,7 @@ public class CardPluginImpl implements CardPlugin {
     @Override
     public void onAddCard(MagePermanent card, int count) {
         if (card != null) {
-            Animation.showCard((CardPanel) card, count > 0 ? count : 1);
+            Animation.showCard(card, count > 0 ? count : 1);
             try {
                 while ((card).getAlpha() + 0.05f < 1) {
                     Thread.sleep(30);

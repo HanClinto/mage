@@ -24,9 +24,10 @@
 * The views and conclusions contained in the software and documentation are those of the
 * authors and should not be interpreted as representing official policies, either expressed
 * or implied, of BetaSteward_at_googlemail.com.
-*/
-
+ */
 package mage.util;
+
+
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -46,19 +47,20 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
     //TODO: might have to make E extend Copyable
 
-    protected List<E> list = new ArrayList<>();
+    protected final List<E> list = new ArrayList<>();
 
     protected final ReentrantLock lock = new ReentrantLock();
 
     protected int modCount;
     protected int index;
 
-    public CircularList() {}
+    public CircularList() {
+    }
 
     public CircularList(final CircularList<E> cList) {
         this.modCount = cList.modCount;
-        for (E entry: cList.list) {
-            this.list.add((E)entry);
+        for (E entry : cList.list) {
+            this.list.add((E) entry);
         }
         this.index = cList.index;
     }
@@ -68,7 +70,8 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
     }
 
     /**
-     *  Inserts an element into the current position
+     * Inserts an element into the current position
+     *
      * @param e
      * @return
      */
@@ -84,14 +87,13 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         try {
             list.add(index, element);
             modCount++;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
 
     /**
-     * 
+     *
      * @param e the element to set as current
      * @return true if element e exists and index was set
      */
@@ -104,7 +106,8 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
     }
 
     /**
-     *  Retrieves the element at the current position
+     * Retrieves the element at the current position
+     *
      * @return
      */
     public E get() {
@@ -117,9 +120,9 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
     }
 
     /**
-     * Returns the next element in the list.  Will loop around to the beginning
+     * Returns the next element in the list. Will loop around to the beginning
      * of the list if the current element is the last.
-     * 
+     *
      * @return the next element in the list
      */
     public E getNext() {
@@ -127,8 +130,8 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
     }
 
     /**
-     * Returns the previous element in the list.  Will loop around to the end
-     * of the list if the current element is the first.
+     * Returns the previous element in the list. Will loop around to the end of
+     * the list if the current element is the first.
      *
      * @return the previous element in the list
      */
@@ -153,8 +156,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
             checkPointer();
             modCount++;
             return ret;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -167,8 +169,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
             checkPointer();
             modCount++;
             return ret;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -178,8 +179,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         try {
             index = incrementListPointer(index);
             return index;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -197,8 +197,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         try {
             index = decrementListPointer(index);
             return index;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -212,14 +211,13 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
     }
 
     /**
-     *  This method should only be called from a locked method
-     *  thus it is not necessary to lock from this method
+     * This method should only be called from a locked method thus it is not
+     * necessary to lock from this method
      */
     private int checkPointer() {
         if (index > list.size()) {
             index = list.size() - 1;
-        }
-        else if (index < 0) {
+        } else if (index < 0) {
             index = 0;
         }
         return index;
@@ -270,8 +268,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         try {
             modCount++;
             return list.addAll(index, c);
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -284,8 +281,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
             modCount++;
             checkPointer();
             return ret;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -298,8 +294,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
             modCount++;
             checkPointer();
             return ret;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -311,8 +306,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
             list.clear();
             modCount++;
             index = 0;
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -323,8 +317,7 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         try {
             modCount++;
             return list.set(index, element);
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -363,11 +356,11 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         return new CircularListIterator<>(index);
     }
 
-    private class CircularIterator<E>  implements Iterator<E> {
+    private class CircularIterator<E> implements Iterator<E> {
 
         int cursor;
-        int lastIndex;
-        int curModCount;
+        final int lastIndex;
+        final int curModCount;
         boolean hasMoved = false;
 
         private CircularIterator() {
@@ -405,11 +398,12 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
 
     }
 
-    private class CircularListIterator<E>  implements ListIterator<E> {
+    private class CircularListIterator<E> implements ListIterator<E> {
+
         int cursor;
-        int lastIndex;
-        int firstIndex;
-        int curModCount;
+        final int lastIndex;
+        final int firstIndex;
+        final int curModCount;
         boolean hasMoved = false;
 
         private CircularListIterator() {
@@ -498,6 +492,5 @@ public class CircularList<E> implements List<E>, Iterable<E>, Serializable {
         }
 
     }
-
 
 }

@@ -27,13 +27,10 @@
  */
 package mage.abilities.keyword;
 
-import java.util.Iterator;
-import java.util.UUID;
 import mage.abilities.Ability;
 import mage.abilities.SpellAbility;
 import mage.abilities.costs.Cost;
 import mage.abilities.costs.Costs;
-import mage.abilities.costs.VariableCost;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.effects.ContinuousEffect;
 import mage.abilities.effects.OneShotEffect;
@@ -50,6 +47,8 @@ import mage.game.events.GameEvent;
 import mage.game.events.ZoneChangeEvent;
 import mage.players.Player;
 import mage.target.targetpointer.FixedTarget;
+
+import java.util.UUID;
 
 /**
  * 702.32. Flashback
@@ -123,23 +122,23 @@ public class FlashbackAbility extends SpellAbility {
     @Override
     public String getRule() {
         StringBuilder sbRule = new StringBuilder("Flashback");
-        if (costs.size() > 0) {
+        if (!costs.isEmpty()) {
             sbRule.append(" - ");
         } else {
-            sbRule.append(" ");
+            sbRule.append(' ');
         }
-        if (manaCosts.size() > 0) {
+        if (!manaCosts.isEmpty()) {
             sbRule.append(manaCosts.getText());
         }
-        if (costs.size() > 0) {
-            if (manaCosts.size() > 0) {
+        if (!costs.isEmpty()) {
+            if (!manaCosts.isEmpty()) {
                 sbRule.append(", ");
             }
             sbRule.append(costs.getText());
-            sbRule.append(".");
+            sbRule.append('.');
         }
         if (abilityName != null) {
-            sbRule.append(" ");
+            sbRule.append(' ');
             sbRule.append(abilityName);
         }
         sbRule.append(" <i>(You may cast this card from your graveyard for its flashback cost. Then exile it.)</i>");
@@ -206,21 +205,18 @@ class FlashbackEffect extends OneShotEffect {
 
                 for (Cost cost : source.getCosts()) {
                     if (cost instanceof Costs) {
-                        Costs listOfcosts = (Costs) cost;
-                        for (Iterator itListOfcosts = listOfcosts.iterator(); itListOfcosts.hasNext();) {
-                            Object singleCost = itListOfcosts.next();
+                        Costs<Cost> listOfCosts = (Costs<Cost>) cost;
+                        for (Cost singleCost : listOfCosts) {
                             if (singleCost instanceof ManaCost) {
-                                ((ManaCost) singleCost).clearPaid();
+                                singleCost.clearPaid();
                                 spellAbility.getManaCosts().add((ManaCost) singleCost);
                                 spellAbility.getManaCostsToPay().add((ManaCost) singleCost);
                             } else {
-                                spellAbility.getCosts().add((Cost) singleCost);
+                                spellAbility.getCosts().add(singleCost);
                             }
                         }
 
-                    }
-
-                    if (!(cost instanceof VariableCost) && !(cost instanceof Costs)) {
+                    } else {
                         if (cost instanceof ManaCost) {
                             spellAbility.getManaCosts().add((ManaCost) cost);
                             spellAbility.getManaCostsToPay().add((ManaCost) cost);
@@ -274,7 +270,8 @@ class FlashbackReplacementEffect extends ReplacementEffectImpl {
         if (controller != null) {
             Card card = game.getCard(event.getTargetId());
             if (card != null) {
-                return controller.moveCards(card, Zone.EXILED, source, game);
+                return controller.moveCards(
+                        card, Zone.EXILED, source, game, false, false, false, event.getAppliedEffects());
             }
         }
         return false;

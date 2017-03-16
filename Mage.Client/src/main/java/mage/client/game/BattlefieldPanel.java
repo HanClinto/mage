@@ -162,8 +162,7 @@ public class BattlefieldPanel extends javax.swing.JLayeredPane {
                         if (s1 != s2) {
                             changed = true;
                         } else if (s1 > 0) {
-                            Set<UUID> attachmentIds = new HashSet<>();
-                            attachmentIds.addAll(permanent.getAttachments());
+                            Set<UUID> attachmentIds = new HashSet<>(permanent.getAttachments());
                             for (MagePermanent magePermanent : oldMagePermanent.getLinks()) {
                                 if (!attachmentIds.contains(magePermanent.getOriginalPermanent().getId())) {
                                     // that means that the amount of attachments is the same
@@ -299,13 +298,10 @@ public class BattlefieldPanel extends javax.swing.JLayeredPane {
                 }
             } else if (comp instanceof MagePermanent) {
                 if (((MagePermanent) comp).getOriginal().getId().equals(permanentId)) {
-                    Thread t = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Plugins.getInstance().onRemoveCard((MagePermanent) comp, count);
-                            comp.setVisible(false);
-                            BattlefieldPanel.this.jPanel.remove(comp);
-                        }
+                    Thread t = new Thread(() -> {
+                        Plugins.getInstance().onRemoveCard((MagePermanent) comp, count);
+                        comp.setVisible(false);
+                        BattlefieldPanel.this.jPanel.remove(comp);
                     });
                     t.start();
                 }

@@ -10,18 +10,19 @@ public class CardDownloadData {
 
     private String name;
     private String downloadName;
+    private String fileName = "";
     private String set;
     private String tokenSetCode;
     private String tokenDescriptor;
-    private String collectorId;
-    private Integer type;
+    private final String collectorId;
+    private final Integer type;
     private boolean token;
-    private boolean twoFacedCard;
-    private boolean secondSide;
+    private final boolean twoFacedCard;
+    private final boolean secondSide;
     private boolean flipCard;
     private boolean flippedSide;
     private boolean splitCard;
-    private boolean usesVariousArt;
+    private final boolean usesVariousArt;
     private boolean isType2;
 
     public CardDownloadData(String name, String set, String collectorId, boolean usesVariousArt, Integer type, String tokenSetCode, String tokenDescriptor) {
@@ -30,6 +31,11 @@ public class CardDownloadData {
 
     public CardDownloadData(String name, String set, String collectorId, boolean usesVariousArt, Integer type, String tokenSetCode, String tokenDescriptor, boolean token) {
         this(name, set, collectorId, usesVariousArt, type, tokenSetCode, tokenDescriptor, token, false, false);
+    }
+
+    public CardDownloadData(String name, String set, String collectorId, boolean usesVariousArt, Integer type, String tokenSetCode, String tokenDescriptor, boolean token, String fileName) {
+        this(name, set, collectorId, usesVariousArt, type, tokenSetCode, tokenDescriptor, token, false, false);
+        this.fileName = fileName;
     }
 
     public CardDownloadData(String name, String set, String collectorId, boolean usesVariousArt, Integer type, String tokenSetCode, String tokenDescriptor, boolean token, boolean twoFacedCard, boolean secondSide) {
@@ -43,7 +49,7 @@ public class CardDownloadData {
         this.secondSide = secondSide;
         this.tokenSetCode = tokenSetCode;
         this.tokenDescriptor = tokenDescriptor;
-        
+
         if (this.tokenDescriptor == null || this.tokenDescriptor.equalsIgnoreCase("")) {
             this.tokenDescriptor = lastDitchTokenDescriptor();
         }
@@ -60,6 +66,7 @@ public class CardDownloadData {
         this.usesVariousArt = card.usesVariousArt;
         this.tokenSetCode = card.tokenSetCode;
         this.tokenDescriptor = card.tokenDescriptor;
+        this.fileName = card.fileName;
 
     }
 
@@ -118,6 +125,14 @@ public class CardDownloadData {
         return name;
     }
 
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -125,7 +140,7 @@ public class CardDownloadData {
     public String getSet() {
         return set;
     }
-    
+
     public void setSet(String set) {
         this.set = set;
     }
@@ -144,15 +159,15 @@ public class CardDownloadData {
 
     public void setTokenDescriptor(String tokenDescriptor) {
         this.tokenDescriptor = tokenDescriptor;
-    }  
-    
+    }
+
     private String lastDitchTokenDescriptor() {
-        String name = this.name.replaceAll("[^a-zA-Z0-9]", "");
-        String descriptor = name + "...."; 
+        String tmpName = this.name.replaceAll("[^a-zA-Z0-9]", "");
+        String descriptor = tmpName + "....";
         descriptor = descriptor.toUpperCase();
         return descriptor;
-    }  
-    
+    }
+
     public boolean isToken() {
         return token;
     }

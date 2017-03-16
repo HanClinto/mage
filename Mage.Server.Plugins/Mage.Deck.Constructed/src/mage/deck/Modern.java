@@ -43,7 +43,7 @@ public class Modern extends Constructed {
     public Modern() {
         super("Constructed - Modern");
 
-        Date cutoff = new GregorianCalendar(2003, 7, 28).getTime(); // Eight edition release date
+        Date cutoff = new GregorianCalendar(2003, 6, 28).getTime(); // Eight edition release date
         for (ExpansionSet set : Sets.getInstance().values()) {
             if ((set.getReleaseDate().after(cutoff) || set.getReleaseDate().equals(cutoff))
                     && (set.getSetType() == SetType.CORE || set.getSetType() == SetType.EXPANSION)) {
@@ -62,7 +62,9 @@ public class Modern extends Constructed {
         banned.add("Dig Through Time");
         banned.add("Dread Return");
         banned.add("Eye of Ugin");
+        banned.add("Gitaxian Probe");
         banned.add("Glimpse of Nature");
+        banned.add("Golgari Grave-Troll");
         banned.add("Great Furnace");
         banned.add("Green Sun's Zenith");
         banned.add("Hypergenesis");

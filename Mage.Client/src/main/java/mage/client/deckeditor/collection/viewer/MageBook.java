@@ -27,20 +27,6 @@
  */
 package mage.client.deckeditor.collection.viewer;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import javax.imageio.ImageIO;
-import javax.swing.*;
 import mage.cards.Card;
 import mage.cards.CardDimensions;
 import mage.cards.MageCard;
@@ -52,18 +38,28 @@ import mage.client.MageFrame;
 import mage.client.cards.BigCard;
 import mage.client.components.HoverButton;
 import mage.client.plugins.impl.Plugins;
-import mage.client.util.Command;
 import mage.client.util.Config;
 import mage.client.util.ImageHelper;
 import mage.client.util.NaturalOrderCardNumberComparator;
 import mage.client.util.audio.AudioManager;
 import mage.client.util.sets.ConstructedFormats;
 import mage.components.ImagePanel;
+import mage.components.ImagePanelStyle;
 import mage.constants.Rarity;
 import mage.view.CardView;
 import org.apache.log4j.Logger;
 import org.mage.card.arcane.GlowText;
 import org.mage.card.arcane.ManaSymbols;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Mage book with cards and page flipping.
@@ -94,12 +90,12 @@ public class MageBook extends JComponent {
         setMinimumSize(new Dimension(conf.WIDTH, conf.HEIGHT));
         //setBorder(BorderFactory.createLineBorder(Color.green));
 
-        jPanelLeft = getImagePanel(LEFT_PANEL_IMAGE_PATH, ImagePanel.TILED);
+        jPanelLeft = getImagePanel(LEFT_PANEL_IMAGE_PATH, ImagePanelStyle.TILED);
         jPanelLeft.setPreferredSize(new Dimension(LEFT_RIGHT_PAGES_WIDTH, 0));
         jPanelLeft.setLayout(null);
-        jPanelCenter = getImagePanel(CENTER_PANEL_IMAGE_PATH, ImagePanel.SCALED);
+        jPanelCenter = getImagePanel(CENTER_PANEL_IMAGE_PATH, ImagePanelStyle.SCALED);
         jPanelCenter.setLayout(new BorderLayout());
-        jPanelRight = getImagePanel(RIGHT_PANEL_IMAGE_PATH, ImagePanel.TILED);
+        jPanelRight = getImagePanel(RIGHT_PANEL_IMAGE_PATH, ImagePanelStyle.TILED);
         jPanelRight.setPreferredSize(new Dimension(LEFT_RIGHT_PAGES_WIDTH, 0));
         jPanelRight.setLayout(null);
 
@@ -110,32 +106,26 @@ public class MageBook extends JComponent {
         pageLeft = new HoverButton(null, image, image, image, new Rectangle(64, 64));
         pageLeft.setBounds(0, 0, 64, 64);
         pageLeft.setVisible(false);
-        pageLeft.setObserver(new Command() {
-            @Override
-            public void execute() {
-                currentPage--;
-                if (currentPage == 0) {
-                    pageLeft.setVisible(false);
-                }
-                pageRight.setVisible(true);
-                AudioManager.playPrevPage();
-                showCards();
+        pageLeft.setObserver(() -> {
+            currentPage--;
+            if (currentPage == 0) {
+                pageLeft.setVisible(false);
             }
+            pageRight.setVisible(true);
+            AudioManager.playPrevPage();
+            showCards();
         });
 
         image = ImageHelper.loadImage(RIGHT_PAGE_BUTTON_IMAGE_PATH);
         pageRight = new HoverButton(null, image, image, image, new Rectangle(64, 64));
         pageRight.setBounds(conf.WIDTH - 2 * LEFT_RIGHT_PAGES_WIDTH - 64, 0, 64, 64);
         pageRight.setVisible(false);
-        pageRight.setObserver(new Command() {
-            @Override
-            public void execute() {
-                currentPage++;
-                pageLeft.setVisible(true);
-                pageRight.setVisible(false);
-                AudioManager.playNextPage();
-                showCards();
-            }
+        pageRight.setObserver(() -> {
+            currentPage++;
+            pageLeft.setVisible(true);
+            pageRight.setVisible(false);
+            AudioManager.playNextPage();
+            showCards();
         });
 
         addSetTabs();
@@ -179,21 +169,18 @@ public class MageBook extends JComponent {
             tab.setBounds(0, y, 39, 120);
             final String _set = set;
             final int _index = count;
-            tab.setObserver(new Command() {
-                @Override
-                public void execute() {
-                    if (!currentSet.equals(_set) || currentPage != 0) {
-                        AudioManager.playAnotherTab();
-                        synchronized (MageBook.this) {
-                            selectedTab = _index;
-                        }
-                        currentPage = 0;
-                        currentSet = _set;
-                        pageLeft.setVisible(false);
-                        pageRight.setVisible(false);
-                        addSetTabs();
-                        showCards();
+            tab.setObserver(() -> {
+                if (!currentSet.equals(_set) || currentPage != 0) {
+                    AudioManager.playAnotherTab();
+                    synchronized (MageBook.this) {
+                        selectedTab = _index;
                     }
+                    currentPage = 0;
+                    currentSet = _set;
+                    pageLeft.setVisible(false);
+                    pageRight.setVisible(false);
+                    addSetTabs();
+                    showCards();
                 }
             });
             tabs.add(tab);
@@ -249,13 +236,13 @@ public class MageBook extends JComponent {
         if (cardDimension == null) {
             cardDimension = new Dimension(Config.dimensions.frameWidth, Config.dimensions.frameHeight);
         }
-        final MageCard cardImg = Plugins.getInstance().getMageCard(card, bigCard, cardDimension, gameId, true);
+        final MageCard cardImg = Plugins.getInstance().getMageCard(card, bigCard, cardDimension, gameId, true, true);
         cardImg.setBounds(rectangle);
         jLayeredPane.add(cardImg, JLayeredPane.DEFAULT_LAYER, 10);
         cardImg.update(card);
         cardImg.setCardBounds(rectangle.x, rectangle.y, cardDimensions.frameWidth, cardDimensions.frameHeight);
 
-        boolean implemented = !card.getRarity().equals(Rarity.NA);
+        boolean implemented = card.getRarity() != Rarity.NA;
 
         GlowText label = new GlowText();
         label.setGlow(implemented ? Color.green : NOT_IMPLEMENTED, 12, 0.0f);
@@ -269,7 +256,7 @@ public class MageBook extends JComponent {
         CardCriteria criteria = new CardCriteria();
         criteria.setCodes(set);
         List<CardInfo> cards = CardRepository.instance.findCards(criteria);
-        Collections.sort(cards, new NaturalOrderCardNumberComparator());
+        cards.sort(new NaturalOrderCardNumberComparator());
         int start = page * conf.CARDS_PER_PAGE;
         int end = page * conf.CARDS_PER_PAGE + conf.CARDS_PER_PAGE;
         if (end > cards.size()) {
@@ -281,7 +268,7 @@ public class MageBook extends JComponent {
         return cards.subList(start, end);
     }
 
-    private ImagePanel getImagePanel(String filename, int type) {
+    private ImagePanel getImagePanel(String filename, ImagePanelStyle type) {
         try {
             InputStream is = this.getClass().getResourceAsStream(filename);
 
@@ -334,12 +321,15 @@ public class MageBook extends JComponent {
     }
 
     public void updateSize(String size) {
-        if (size.equals(LAYOUT_3x3)) {
-            this.conf = new _3x3Configuration();
-        } else if (size.equals(LAYOUT_4x4)) {
-            this.conf = new _4x4Configuration();
-        } else {
-            return;
+        switch (size) {
+            case LAYOUT_3x3:
+                this.conf = new _3x3Configuration();
+                break;
+            case LAYOUT_4x4:
+                this.conf = new _4x4Configuration();
+                break;
+            default:
+                return;
         }
         currentPage = 0;
         pageLeft.setVisible(false);
@@ -354,7 +344,7 @@ public class MageBook extends JComponent {
     /**
      * Defines the position of the next card on the mage book
      */
-    private static class CardPosition {
+    private static final class CardPosition {
 
         private CardPosition() {
         }
@@ -370,7 +360,7 @@ public class MageBook extends JComponent {
         public static final int GAP_Y = 45;
     }
 
-    abstract class Configuration {
+    abstract static class Configuration {
 
         public int CARDS_PER_PAGE;
         public int CARD_ROWS;
@@ -412,7 +402,7 @@ public class MageBook extends JComponent {
     private ImagePanel jPanelCenter;
     private JPanel jPanelRight;
     private JLayeredPane jLayeredPane;
-    private BigCard bigCard;
+    private final BigCard bigCard;
     private HoverButton pageLeft;
     private HoverButton pageRight;
 
@@ -423,7 +413,7 @@ public class MageBook extends JComponent {
     private static final Logger log = Logger.getLogger(MageBook.class);
     private Dimension cardDimension;
     private java.util.List<String> setsToDisplay = new ArrayList<>();
-    private java.util.List<HoverButton> tabs = new ArrayList<>();
+    private final java.util.List<HoverButton> tabs = new ArrayList<>();
     private int selectedTab;
 
     private static final String CENTER_PANEL_IMAGE_PATH = "/book_bg.jpg";

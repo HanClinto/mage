@@ -35,7 +35,7 @@ import mage.abilities.ActivatedAbility;
 import mage.abilities.keyword.DoubleStrikeAbility;
 import mage.abilities.keyword.FirstStrikeAbility;
 import mage.abilities.keyword.TrampleAbility;
-import mage.abilities.mana.ManaAbility;
+import mage.abilities.mana.ActivatedManaAbilityImpl;
 import mage.counters.BoostCounter;
 import mage.counters.Counter;
 import mage.counters.CounterType;
@@ -51,7 +51,7 @@ import org.apache.log4j.Logger;
  * this evaluator is only good for two player games
  *
  */
-public class GameStateEvaluator {
+public final class GameStateEvaluator {
 
     private static final Logger logger = Logger.getLogger(GameStateEvaluator.class);
 
@@ -106,9 +106,9 @@ public class GameStateEvaluator {
         if (permanent.getCardType().contains(CardType.CREATURE)) {
             value += evaluateCreature(permanent, game) * CREATURE_FACTOR;
         }
-        value += permanent.getAbilities().getManaAbilities(Zone.BATTLEFIELD).size();
+        value += permanent.getAbilities().getActivatedManaAbilities(Zone.BATTLEFIELD).size();
         for (ActivatedAbility ability: permanent.getAbilities().getActivatedAbilities(Zone.BATTLEFIELD)) {
-            if (!(ability instanceof ManaAbility) && ability.canActivate(ability.getControllerId(), game))
+            if (!(ability instanceof ActivatedManaAbilityImpl) && ability.canActivate(ability.getControllerId(), game))
                 value += ability.getEffects().size();
         }
         for (Counter counter: permanent.getCounters(game).values()) {

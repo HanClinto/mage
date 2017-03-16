@@ -62,7 +62,7 @@ public class AddCardSubTypeTargetEffect extends ContinuousEffectImpl {
                 target.getSubtype(game).add(addedSubType);
             }
         } else {
-            if (Duration.Custom.equals(duration)) {
+            if (duration == Duration.Custom) {
                 discard();
             }
         }
@@ -77,7 +77,7 @@ public class AddCardSubTypeTargetEffect extends ContinuousEffectImpl {
     @Override
     public String getText(Mode mode) {
         StringBuilder sb = new StringBuilder();
-        if (mode.getTargets().size() > 0) {
+        if (!mode.getTargets().isEmpty()) {
             sb.append("Target ").append(mode.getTargets().get(0).getTargetName());
         } else {
             sb.append("It ");

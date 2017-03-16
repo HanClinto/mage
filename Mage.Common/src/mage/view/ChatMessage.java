@@ -45,15 +45,15 @@ public class ChatMessage implements Serializable {
     private MessageType messageType;
 
     public enum MessageColor {
-        BLACK, RED, GREEN, BLUE, ORANGE, YELLOW;
+        BLACK, RED, GREEN, BLUE, ORANGE, YELLOW
     }
 
     public enum MessageType {
-        USER_INFO, STATUS, GAME, TALK, WHISPER;
+        USER_INFO, STATUS, GAME, TALK, WHISPER_FROM, WHISPER_TO
     }
 
     public enum SoundToPlay {
-        PlayerLeft, PlayerQuitTournament, PlayerSubmittedDeck, PlayerWhispered;
+        PlayerLeft, PlayerQuitTournament, PlayerSubmittedDeck, PlayerWhispered
     }
 
     public ChatMessage(String username, String message, String time, MessageColor color) {
@@ -82,11 +82,11 @@ public class ChatMessage implements Serializable {
     }
 
     public boolean isUserMessage() {
-        return color != null && (color.equals(MessageColor.BLUE) || color.equals(MessageColor.YELLOW));
+        return color != null && (color==MessageColor.BLUE || color==MessageColor.YELLOW);
     }
 
     public boolean isStatusMessage() {
-        return color != null && color.equals(MessageColor.ORANGE);
+        return color != null && color== MessageColor.ORANGE;
     }
 
     public String getUsername() {

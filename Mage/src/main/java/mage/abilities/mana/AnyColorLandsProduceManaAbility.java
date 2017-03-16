@@ -29,13 +29,15 @@ package mage.abilities.mana;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import mage.Mana;
 import mage.abilities.Abilities;
 import mage.abilities.Ability;
 import mage.abilities.costs.common.TapSourceCost;
 import mage.abilities.effects.common.ManaEffect;
 import mage.choices.Choice;
-import mage.choices.ChoiceImpl;
+import mage.choices.ChoiceColor;
 import mage.constants.ColoredManaSymbol;
 import mage.constants.TargetController;
 import mage.constants.Zone;
@@ -50,7 +52,7 @@ import mage.players.Player;
  *
  * @author LevelX2
  */
-public class AnyColorLandsProduceManaAbility extends ManaAbility {
+public class AnyColorLandsProduceManaAbility extends ActivatedManaAbilityImpl {
 
     public AnyColorLandsProduceManaAbility(TargetController targetController) {
         super(Zone.BATTLEFIELD, new AnyColorLandsProduceManaEffect(targetController), new TapSourceCost());
@@ -69,6 +71,12 @@ public class AnyColorLandsProduceManaAbility extends ManaAbility {
     public List<Mana> getNetMana(Game game) {
         return ((AnyColorLandsProduceManaEffect) getEffects().get(0)).getNetMana(game, this);
     }
+
+    @Override
+    public boolean definesMana() {
+        return true;
+    }
+
 }
 
 class AnyColorLandsProduceManaEffect extends ManaEffect {
@@ -91,7 +99,8 @@ class AnyColorLandsProduceManaEffect extends ManaEffect {
     @Override
     public boolean apply(Game game, Ability source) {
         Mana types = getManaTypes(game, source);
-        Choice choice = new ChoiceImpl(true);
+        Choice choice = new ChoiceColor(true);
+        choice.getChoices().clear();
         choice.setMessage("Pick a mana color");
         if (types.getBlack() > 0) {
             choice.getChoices().add("Black");
@@ -115,7 +124,7 @@ class AnyColorLandsProduceManaEffect extends ManaEffect {
             choice.getChoices().add("Green");
             choice.getChoices().add("White");
         }
-        if (choice.getChoices().size() > 0) {
+        if (!choice.getChoices().isEmpty()) {
             Player player = game.getPlayer(source.getControllerId());
             if (choice.getChoices().size() == 1) {
                 choice.setChoice(choice.getChoices().iterator().next());
@@ -154,11 +163,12 @@ class AnyColorLandsProduceManaEffect extends ManaEffect {
     }
 
     private Mana getManaTypes(Game game, Ability source) {
-        List<Permanent> lands = game.getBattlefield().getActivePermanents(filter, source.getControllerId(), game);
+        Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "needed to identify endless loop causing cards: {0}", source.getSourceObject(game).getName());
+        List<Permanent> lands = game.getBattlefield().getActivePermanents(filter, source.getControllerId(), source.getSourceId(), game);
         Mana types = new Mana();
         for (Permanent land : lands) {
-            Abilities<ManaAbility> mana = land.getAbilities().getManaAbilities(Zone.BATTLEFIELD);
-            for (ManaAbility ability : mana) {
+            Abilities<ActivatedManaAbilityImpl> mana = land.getAbilities().getActivatedManaAbilities(Zone.BATTLEFIELD);
+            for (ActivatedManaAbilityImpl ability : mana) {
                 if (!ability.equals(source) && ability.definesMana()) {
                     for (Mana netMana : ability.getNetMana(game)) {
                         types.add(netMana);
@@ -188,7 +198,7 @@ class AnyColorLandsProduceManaEffect extends ManaEffect {
             netManas.add(new Mana(ColoredManaSymbol.W));
         }
         if (types.getColorless() > 0) {
-            netManas.add(new Mana(0, 0, 0, 0, 0, 0, 0, 1));
+            netManas.add(Mana.ColorlessMana(1));
         }
         return netManas;
     }

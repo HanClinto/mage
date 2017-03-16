@@ -10,6 +10,7 @@ import com.j256.ormlite.table.TableUtils;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -27,11 +28,11 @@ public enum ExpansionRepository {
     private static final String JDBC_URL = "jdbc:h2:file:./db/cards.h2;AUTO_SERVER=TRUE";
     private static final String VERSION_ENTITY_NAME = "expansion";
     private static final long EXPANSION_DB_VERSION = 5;
-    private static final long EXPANSION_CONTENT_VERSION = 10;
+    private static final long EXPANSION_CONTENT_VERSION = 12;
 
     private Dao<ExpansionInfo, Object> expansionDao;
 
-    private ExpansionRepository() {
+    ExpansionRepository() {
         File file = new File("db");
         if (!file.exists()) {
             file.mkdirs();
@@ -55,6 +56,15 @@ public enum ExpansionRepository {
         try {
             expansionDao.create(expansion);
         } catch (SQLException ex) {
+            logger.error(ex);
+        }
+    }
+
+    public void update(ExpansionInfo expansion) {
+        try {
+            expansionDao.update(expansion);
+        } catch (SQLException ex) {
+            logger.error(ex);
         }
     }
 
@@ -81,6 +91,7 @@ public enum ExpansionRepository {
             List<ExpansionInfo> expansions = expansionDao.query(qb.prepare());
             sets = expansions.toArray(new ExpansionInfo[0]);
         } catch (SQLException ex) {
+            logger.error(ex);
         }
         return sets;
     }
@@ -93,6 +104,7 @@ public enum ExpansionRepository {
             qb.where().eq("basicLands", new SelectArg(true));
             sets = expansionDao.query(qb.prepare());
         } catch (SQLException ex) {
+            logger.error(ex);
         }
         return sets;
     }
@@ -104,6 +116,7 @@ public enum ExpansionRepository {
             qb.where().eq("blockName", new SelectArg(blockName));
             return expansionDao.query(qb.prepare());
         } catch (SQLException ex) {
+            logger.error(ex);
         }
         return sets;
     }
@@ -112,12 +125,13 @@ public enum ExpansionRepository {
         ExpansionInfo set = null;
         try {
             QueryBuilder<ExpansionInfo, Object> qb = expansionDao.queryBuilder();
-            qb.where().eq("code", new SelectArg(setCode));
+            qb.limit(1L).where().eq("code", new SelectArg(setCode));
             List<ExpansionInfo> expansions = expansionDao.query(qb.prepare());
-            if (expansions.size() > 0) {
+            if (!expansions.isEmpty()) {
                 set = expansions.get(0);
             }
         } catch (SQLException ex) {
+            logger.error(ex);
         }
         return set;
     }
@@ -126,12 +140,13 @@ public enum ExpansionRepository {
         ExpansionInfo set = null;
         try {
             QueryBuilder<ExpansionInfo, Object> qb = expansionDao.queryBuilder();
-            qb.where().eq("name", new SelectArg(setName));
+            qb.limit(1L).where().eq("name", new SelectArg(setName));
             List<ExpansionInfo> expansions = expansionDao.query(qb.prepare());
-            if (expansions.size() > 0) {
+            if (!expansions.isEmpty()) {
                 set = expansions.get(0);
             }
         } catch (SQLException ex) {
+            logger.error(ex);
         }
         return set;
     }
@@ -142,8 +157,9 @@ public enum ExpansionRepository {
             qb.orderBy("releaseDate", true);
             return expansionDao.query(qb.prepare());
         } catch (SQLException ex) {
+            logger.error(ex);
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     public List<String> getAllSetNames() {
@@ -157,8 +173,9 @@ public enum ExpansionRepository {
             }
             return setNames;
         } catch (SQLException ex) {
+            logger.error(ex);
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     public long getContentVersionFromDB() {

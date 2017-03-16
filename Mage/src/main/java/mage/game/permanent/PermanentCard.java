@@ -28,6 +28,7 @@
 package mage.game.permanent;
 
 import java.util.UUID;
+import mage.MageObject;
 import mage.abilities.Abilities;
 import mage.abilities.Ability;
 import mage.abilities.costs.mana.ManaCost;
@@ -44,6 +45,7 @@ import mage.game.events.ZoneChangeEvent;
 public class PermanentCard extends PermanentImpl {
 
     protected int maxLevelCounters;
+    // A copy of the origin card that was cast (this is not the original card, so it's possible to chnage some attribute to this blueprint to change attributes to the permanent if it enters the battlefield with e.g. a subtype)
     protected Card card;
     // the number this permanent instance had
     protected int zoneChangeCounter;
@@ -71,7 +73,7 @@ public class PermanentCard extends PermanentImpl {
         if (card instanceof LevelerCard) {
             maxLevelCounters = ((LevelerCard) card).getMaxLevelCounters();
         }
-        if (canTransform()) {
+        if (isTransformable()) {
             if (game.getState().getValue(TransformAbility.VALUE_KEY_ENTER_TRANSFORMED + getId()) != null) {
                 game.getState().setValue(TransformAbility.VALUE_KEY_ENTER_TRANSFORMED + getId(), null);
                 setTransformed(true);
@@ -129,13 +131,21 @@ public class PermanentCard extends PermanentImpl {
         this.cardNumber = card.getCardNumber();
         this.usesVariousArt = card.getUsesVariousArt();
 
-        canTransform = card.canTransform();
-        if (canTransform) {
-            secondSideCard = card.getSecondCardFace();
-            nightCard = card.isNightCard();
+        transformable = card.isTransformable();
+        if (transformable) {
+            this.nightCard = card.isNightCard();
+            if (!this.nightCard) {
+                this.secondSideCard = card.getSecondCardFace();
+                this.secondSideCardClazz = this.secondSideCard.getClass();
+            }
         }
         this.flipCard = card.isFlipCard();
         this.flipCardName = card.getFlipCardName();
+    }
+
+    @Override
+    public MageObject getBasicMageObject(Game game) {
+        return card;
     }
 
     public Card getCard() {

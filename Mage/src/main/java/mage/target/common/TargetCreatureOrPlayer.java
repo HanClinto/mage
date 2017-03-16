@@ -90,10 +90,7 @@ public class TargetCreatureOrPlayer extends TargetImpl {
             return filter.match(permanent, game);
         }
         Player player = game.getPlayer(id);
-        if (player != null) {
-            return filter.match(player, game);
-        }
-        return false;
+        return player != null && filter.match(player, game);
     }
 
     @Override
@@ -119,10 +116,7 @@ public class TargetCreatureOrPlayer extends TargetImpl {
         if (permanent != null) {
             return filter.match(permanent, game);
         }
-        if (player != null) {
-            return filter.match(player, game);
-        }
-        return false;
+        return player != null && filter.match(player, game);
     }
 
     /**
@@ -235,11 +229,11 @@ public class TargetCreatureOrPlayer extends TargetImpl {
         for (UUID targetId : getTargets()) {
             Permanent permanent = game.getPermanent(targetId);
             if (permanent != null) {
-                sb.append(permanent.getLogName()).append(" ");
+                sb.append(permanent.getLogName()).append(' ');
             } else {
                 Player player = game.getPlayer(targetId);
                 if (player != null) {
-                    sb.append(player.getLogName()).append(" ");
+                    sb.append(player.getLogName()).append(' ');
                 }
             }
         }

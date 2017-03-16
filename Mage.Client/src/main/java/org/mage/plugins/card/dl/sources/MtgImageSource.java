@@ -73,7 +73,7 @@ public class MtgImageSource implements CardImageSource {
             throw new Exception("Wrong parameters for image: collector id: " + collectorId + ",card set: " + cardSet);
         }
         StringBuilder url = new StringBuilder("http://mtgimage.com/set/");
-            url.append(cardSet.toUpperCase()).append("/");
+            url.append(cardSet.toUpperCase()).append('/');
 
         if (card.isSplitCard()) {            
             url.append(card.getDownloadName().replaceAll(" // ", ""));
@@ -86,9 +86,9 @@ public class MtgImageSource implements CardImageSource {
         }
         if (card.isFlipCard()) {
             if (card.isFlippedSide()) { // download rotated by 180 degree image
-                url.append("b");
+                url.append('b');
             } else {
-                url.append("a");
+                url.append('a');
             }
         }
         url.append(".jpg");
@@ -102,17 +102,21 @@ public class MtgImageSource implements CardImageSource {
     }
 
     @Override
-    public Float getAverageSize() {
+    public float getAverageSize() {
         return 70.0f;
     }
     
     @Override
-    public Integer getTotalImages() {
+    public int getTotalImages() {
         return -1;
     }
     
     @Override
-    public Boolean isTokenSource() {
+    public boolean isTokenSource() {
         return false;
+    }
+
+    @Override
+    public void doPause(String httpImageUrl) {
     }
 }

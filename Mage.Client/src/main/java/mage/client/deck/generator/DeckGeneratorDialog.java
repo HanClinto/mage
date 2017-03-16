@@ -27,25 +27,22 @@
  */
 package mage.client.deck.generator;
 
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemListener;
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
 import mage.cards.Sets;
 import mage.cards.decks.Deck;
 import mage.client.MageFrame;
 import mage.client.dialog.PreferencesDialog;
 import mage.client.util.gui.ColorsChooser;
 import mage.client.util.sets.ConstructedFormats;
-
-import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.EtchedBorder;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  *
@@ -62,8 +59,7 @@ public class DeckGeneratorDialog {
     private static SimpleDateFormat dateFormat;
     private static RatioAdjustingSliderPanel adjustingSliderPanel;
 
-    public DeckGeneratorDialog()
-    {
+    public DeckGeneratorDialog() {
         initDialog();
         dateFormat = new SimpleDateFormat("dd-MM-yyyy-hh-mm-ss-SSS");
     }
@@ -143,11 +139,10 @@ public class DeckGeneratorDialog {
         c.ipadx = 30;
         c.insets = new Insets(5, 10, 0, 10);
         c.weightx = 0.90;
-        cbDeckSize = new JComboBox<>(new String[] { "40", "60" });
+        cbDeckSize = new JComboBox<>(new String[]{"40", "60"});
         cbDeckSize.setSelectedIndex(0);
         cbDeckSize.setAlignmentX(Component.LEFT_ALIGNMENT);
         mainPanel.add(cbDeckSize, c);
-
 
         String prefSize = PreferencesDialog.getCachedValue(PreferencesDialog.KEY_NEW_DECK_GENERATOR_DECK_SIZE, "60");
         if (prefSet != null) {
@@ -196,12 +191,9 @@ public class DeckGeneratorDialog {
         // Advanced checkbox (enable/disable advanced configuration)
         cAdvanced = new JCheckBox("Advanced");
         cAdvanced.setToolTipText("Enable advanced configuration options");
-        cAdvanced.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent itemEvent) {
-                boolean enable = cAdvanced.isSelected();
-                enableAdvancedPanel(enable);
-            }
+        cAdvanced.addItemListener(itemEvent -> {
+            boolean enable = cAdvanced.isSelected();
+            enableAdvancedPanel(enable);
         });
 
         // Advanced Checkbox
@@ -218,25 +210,18 @@ public class DeckGeneratorDialog {
         c.insets = new Insets(5, 10, 0, 5);
         mainPanel.add(advancedPanel, c);
 
-
         btnGenerate = new JButton("Ok");
-        btnGenerate.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                btnGenerate.setEnabled(false);
-                colorsChooser.setEnabled(false);
-                selectedColors = (String) colorsChooser.getSelectedItem();
-                dlg.setVisible(false);
-                MageFrame.getPreferences().put("genDeckColor", selectedColors);
-            }
+        btnGenerate.addActionListener(e -> {
+            btnGenerate.setEnabled(false);
+            colorsChooser.setEnabled(false);
+            selectedColors = (String) colorsChooser.getSelectedItem();
+            dlg.setVisible(false);
+            MageFrame.getPreferences().put("genDeckColor", selectedColors);
         });
         btnCancel = new JButton("Cancel");
-        btnCancel.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dlg.setVisible(false);
-                selectedColors = null;
-            }
+        btnCancel.addActionListener(e -> {
+            dlg.setVisible(false);
+            selectedColors = null;
         });
         JButton[] options = {btnGenerate, btnCancel};
         JOptionPane optionPane = new JOptionPane(mainPanel, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options, options[1]);
@@ -306,18 +291,15 @@ public class DeckGeneratorDialog {
         c.ipady = 0;
         c.weightx = 1.0;
         c.anchor = GridBagConstraints.LAST_LINE_END;
-        c.insets = new Insets(10,10, 0, 0);
+        c.insets = new Insets(10, 10, 0, 0);
         c.gridx = 2;
         c.gridwidth = 1;
         c.gridy = 2;
         btnReset = new JButton("Reset");
         btnReset.setToolTipText("Reset advanced dialog to default values");
-        btnReset.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                cbCMC.setSelectedItem(DeckGeneratorCMC.Default);
-                adjustingSliderPanel.resetValues();
-            }
+        btnReset.addActionListener(actionEvent -> {
+            cbCMC.setSelectedItem(DeckGeneratorCMC.Default);
+            adjustingSliderPanel.resetValues();
         });
         advancedPanel.add(btnReset, c);
 
@@ -329,16 +311,16 @@ public class DeckGeneratorDialog {
     }
 
     public void cleanUp() {
-        for (ActionListener al: btnGenerate.getActionListeners()) {
+        for (ActionListener al : btnGenerate.getActionListeners()) {
             btnGenerate.removeActionListener(al);
         }
-        for (ActionListener al: btnCancel.getActionListeners()) {
+        for (ActionListener al : btnCancel.getActionListeners()) {
             btnCancel.removeActionListener(al);
         }
-        for (ActionListener al: btnReset.getActionListeners()) {
+        for (ActionListener al : btnReset.getActionListeners()) {
             btnReset.removeActionListener(al);
         }
-        for(ItemListener il: cAdvanced.getItemListeners()) {
+        for (ItemListener il : cAdvanced.getItemListeners()) {
             cAdvanced.removeItemListener(il);
         }
     }
@@ -356,7 +338,7 @@ public class DeckGeneratorDialog {
             cleanUp();
             return tmp.getAbsolutePath();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Couldn't generate deck. Try again.");
+            MageFrame.getInstance().showError("Couldn't generate deck. Try again.");
         }
         return null;
     }
@@ -418,12 +400,10 @@ public class DeckGeneratorDialog {
     }
 
     public DeckGeneratorCMC getDeckGeneratorCMC() {
-        DeckGeneratorCMC selectedCMC = (DeckGeneratorCMC)cbCMC.getSelectedItem();
+        DeckGeneratorCMC selectedCMC = (DeckGeneratorCMC) cbCMC.getSelectedItem();
         PreferencesDialog.saveValue(PreferencesDialog.KEY_NEW_DECK_GENERATOR_ADVANCED_CMC, selectedCMC.name());
         return selectedCMC;
     }
-
-
 
     public String getSelectedColors() {
         if (selectedColors != null) {

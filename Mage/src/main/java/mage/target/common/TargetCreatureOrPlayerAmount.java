@@ -49,7 +49,7 @@ import mage.target.TargetAmount;
  */
 public class TargetCreatureOrPlayerAmount extends TargetAmount {
 
-    protected FilterCreatureOrPlayer filter;
+    protected final FilterCreatureOrPlayer filter;
 
     public TargetCreatureOrPlayerAmount(int amount) {
         // 107.1c If a rule or ability instructs a player to choose “any number,” that player may choose
@@ -84,10 +84,7 @@ public class TargetCreatureOrPlayerAmount extends TargetAmount {
             return filter.match(permanent, game);
         }
         Player player = game.getPlayer(objectId);
-        if (player != null) {
-            return filter.match(player, game);
-        }
-        return false;
+        return player != null && filter.match(player, game);
     }
 
     @Override
@@ -108,10 +105,7 @@ public class TargetCreatureOrPlayerAmount extends TargetAmount {
         if (permanent != null) {
             return filter.match(permanent, game);
         }
-        if (player != null) {
-            return filter.match(player, game);
-        }
-        return false;
+        return player != null && filter.match(player, game);
     }
 
     @Override
@@ -207,10 +201,10 @@ public class TargetCreatureOrPlayerAmount extends TargetAmount {
         for (UUID targetId : getTargets()) {
             Permanent permanent = game.getPermanent(targetId);
             if (permanent != null) {
-                sb.append(permanent.getLogName()).append("(").append(getTargetAmount(targetId)).append(") ");
+                sb.append(permanent.getLogName()).append('(').append(getTargetAmount(targetId)).append(") ");
             } else {
                 Player player = game.getPlayer(targetId);
-                sb.append(player.getLogName()).append("(").append(getTargetAmount(targetId)).append(") ");
+                sb.append(player.getLogName()).append('(').append(getTargetAmount(targetId)).append(") ");
             }
         }
         return sb.toString();

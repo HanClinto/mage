@@ -1,6 +1,5 @@
 package org.mage.plugins.card.images;
 
-import mage.client.util.TransformedImageCache;
 import com.google.common.base.Function;
 import com.google.common.collect.ComputationException;
 import com.google.common.collect.MapMaker;
@@ -13,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 import mage.client.dialog.PreferencesDialog;
+import mage.client.util.TransformedImageCache;
 import mage.view.CardView;
 import net.java.truevfs.access.TFile;
 import net.java.truevfs.access.TFileInputStream;
@@ -27,18 +27,19 @@ import org.mage.plugins.card.utils.CardImageUtils;
  * that the images may be garbage collected when they are not needed any more,
  * but will be kept as long as possible.
  *
- * Key format: "<cardname>#<setname>#<type>#<collectorID>#<param>"
+ * Key format: "[cardname]#[setname]#[type]#[collectorID]#[param]"
  *
  * where param is:
- *
  * <ul>
+ * <li>size of image</li>
+ *
  * <li>#Normal: request for unrotated image</li>
  * <li>#Tapped: request for rotated image</li>
  * <li>#Cropped: request for cropped image that is used for Shandalar like card
  * look</li>
  * </ul>
  */
-public class ImageCache {
+public final class ImageCache {
 
     private static final Logger LOGGER = Logger.getLogger(ImageCache.class);
 
@@ -127,7 +128,9 @@ public class ImageCache {
                                 return makeThumbnailByFile(key, file, thumbnailPath);
                             }
                         } else {
-                            return getWizardsCard(loadImage(file));
+                            BufferedImage image = loadImage(file);
+                            image = getWizardsCard(image);
+                            return image;
                         }
                     } else {
                         throw new RuntimeException(
@@ -152,6 +155,9 @@ public class ImageCache {
                 return makeThumbnail(image, thumbnailPath);
             }
         });
+    }
+
+    private ImageCache() {
     }
 
     public static BufferedImage getMorphImage() {
@@ -201,7 +207,7 @@ public class ImageCache {
     public static BufferedImage getThumbnail(CardView card) {
         return getImage(getKey(card, card.getName(), "#thumb"));
     }
-    
+
     public static BufferedImage tryGetThumbnail(CardView card) {
         return tryGetImage(getKey(card, card.getName(), "#thumb"));
     }
@@ -219,8 +225,7 @@ public class ImageCache {
      */
     private static BufferedImage getImage(String key) {
         try {
-            BufferedImage image = IMAGE_CACHE.get(key);
-            return image;
+            return IMAGE_CACHE.get(key);
         } catch (NullPointerException ex) {
             // unfortunately NullOutputException, thrown when apply() returns
             // null, is not public
@@ -235,28 +240,24 @@ public class ImageCache {
             return null;
         }
     }
- 
+
     /**
-     * Returns the Image corresponding to the key only if it already exists
-     * in the cache.
+     * Returns the Image corresponding to the key only if it already exists in
+     * the cache.
      */
     private static BufferedImage tryGetImage(String key) {
-        if (IMAGE_CACHE.containsKey(key)) {
-            return IMAGE_CACHE.get(key);
-        } else {
-            return null;
-        }
+        return IMAGE_CACHE.containsKey(key) ? IMAGE_CACHE.get(key) : null;
     }
 
     /**
      * Returns the map key for a card, without any suffixes for the image size.
      */
     private static String getKey(CardView card, String name, String suffix) {
-        return name + "#" + card.getExpansionSetCode() + "#" + card.getType() + "#" + card.getCardNumber() + "#"
+        return name + '#' + card.getExpansionSetCode() + '#' + card.getType() + '#' + card.getCardNumber() + '#'
                 + (card.getTokenSetCode() == null ? "" : card.getTokenSetCode())
                 + suffix
                 + (card.getUsesVariousArt() ? "#usesVariousArt" : "")
-                + (card.getTokenDescriptor() != null ? "#" + card.getTokenDescriptor() : "#");
+                + (card.getTokenDescriptor() != null ? '#' + card.getTokenDescriptor() : "#");
     }
 
 //    /**
@@ -276,11 +277,11 @@ public class ImageCache {
         if (file == null) {
             return null;
         }
-        BufferedImage image = null;
         if (!file.exists()) {
             LOGGER.debug("File does not exist: " + file.toString());
             return null;
         }
+        BufferedImage image = null;
         try {
             try (TFileInputStream inputStream = new TFileInputStream(file)) {
                 image = ImageIO.read(inputStream);
@@ -360,15 +361,16 @@ public class ImageCache {
 
         return TransformedImageCache.getResizedImage(original, (int) (original.getWidth() * scale), (int) (original.getHeight() * scale));
     }
-    
+
     /**
-     * Returns the image appropriate to display for a card in a picture panel, but
-     * only it was ALREADY LOADED. That is, the call is immediate and will not block
-     * on file IO.
+     * Returns the image appropriate to display for a card in a picture panel,
+     * but only it was ALREADY LOADED. That is, the call is immediate and will
+     * not block on file IO.
+     *
      * @param card
      * @param width
      * @param height
-     * @return 
+     * @return
      */
     public static BufferedImage tryGetImage(CardView card, int width, int height) {
         if (Constants.THUMBNAIL_SIZE_FULL.width + 10 > width) {
@@ -386,13 +388,12 @@ public class ImageCache {
             return original;
         }
 
-        return TransformedImageCache.getResizedImage(original, (int) (original.getWidth() * scale), (int) (original.getHeight() * scale));       
+        return TransformedImageCache.getResizedImage(original, (int) (original.getWidth() * scale), (int) (original.getHeight() * scale));
     }
 
     public static TFile getTFile(String path) {
         try {
-            TFile file = new TFile(path);
-            return file;
+            return new TFile(path);
         } catch (NullPointerException ex) {
             LOGGER.warn("Imagefile does not exist: " + path);
         }

@@ -28,7 +28,7 @@
 package mage.cards.decks.importer;
 
 import java.util.List;
-import java.util.Random;
+
 import mage.cards.decks.DeckCardInfo;
 import mage.cards.decks.DeckCardLists;
 import mage.cards.repository.CardCriteria;
@@ -69,8 +69,7 @@ public class MWSDeckImporter extends DeckImporter {
                 CardCriteria criteria = new CardCriteria();
                 criteria.name(lineName);
                 criteria.setCodes(setCode);
-                List<CardInfo> cards = null;
-                cards = CardRepository.instance.findCards(criteria);
+                List<CardInfo> cards = CardRepository.instance.findCards(criteria);
                 if (!cards.isEmpty()) {
                     cardInfo = cards.get(RandomUtil.nextInt(cards.size()));
                 }
@@ -80,7 +79,7 @@ public class MWSDeckImporter extends DeckImporter {
             }
 
             if (cardInfo == null) {
-                sbMessage.append("Could not find card: '").append(lineName).append("' at line ").append(lineCount).append("\n");
+                sbMessage.append("Could not find card: '").append(lineName).append("' at line ").append(lineCount).append('\n');
             } else {
                 for (int i = 0; i < num; i++) {
                     if (!sideboard) {
@@ -91,7 +90,7 @@ public class MWSDeckImporter extends DeckImporter {
                 }
             }
         } catch (NumberFormatException nfe) {
-            sbMessage.append("Invalid number: ").append(lineNum).append(" at line ").append(lineCount).append("\n");
+            sbMessage.append("Invalid number: ").append(lineNum).append(" at line ").append(lineCount).append('\n');
         }
     }
 }

@@ -2,14 +2,14 @@
 package mage.client.unusedFiles;
 //package mage.client.thread;
 
-import java.awt.Component;
+import java.awt.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 
 public class DelayedViewerThread extends Thread {
-    private static DelayedViewerThread fInstance = new DelayedViewerThread();
+    private static final DelayedViewerThread fInstance = new DelayedViewerThread();
 
     public static DelayedViewerThread getInstance() {
         return fInstance;
@@ -18,7 +18,7 @@ public class DelayedViewerThread extends Thread {
     private final Map<Component, Long> delayedViewers;
 
     protected DelayedViewerThread() {
-        delayedViewers = new HashMap<Component, Long>();
+        delayedViewers = new HashMap<>();
         start();
     }
 

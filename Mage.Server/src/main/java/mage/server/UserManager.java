@@ -27,24 +27,16 @@
  */
 package mage.server;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import mage.server.User.UserState;
 import mage.server.record.UserStats;
 import mage.server.record.UserStatsRepository;
 import mage.server.util.ThreadExecutor;
 import org.apache.log4j.Logger;
 
+import java.util.*;
+import java.util.concurrent.*;
+
 /**
- *
  * manages users - if a user is disconnected and 10 minutes have passed with no
  * activity the user is removed
  *
@@ -52,14 +44,14 @@ import org.apache.log4j.Logger;
  */
 public class UserManager {
 
-    protected static ScheduledExecutorService expireExecutor = Executors.newSingleThreadScheduledExecutor();
+    protected static final ScheduledExecutorService expireExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private static final Logger LOGGER = Logger.getLogger(UserManager.class);
 
     private final ConcurrentHashMap<UUID, User> users = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, User> usersByName = new ConcurrentHashMap<>();
 
-    private static final ExecutorService CALL_EXECUTOR = ThreadExecutor.getInstance().getCallExecutor();
+    private static final ExecutorService USER_EXECUTOR = ThreadExecutor.getInstance().getCallExecutor();
 
     private static final UserManager INSTANCE = new UserManager();
 
@@ -68,29 +60,31 @@ public class UserManager {
     }
 
     private UserManager() {
-        expireExecutor.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                checkExpired();
-            }
-        }, 60, 60, TimeUnit.SECONDS);
+        expireExecutor.scheduleAtFixedRate(this::checkExpired, 60, 60, TimeUnit.SECONDS);
     }
 
-    public User createUser(String userName, String host) {
+    public User createUser(String userName, String host, AuthorizedUser authorizedUser) {
         if (getUserByName(userName) != null) {
             return null; //user already exists
         }
-        User user = new User(userName, host);
+        User user = new User(userName, host, authorizedUser);
         users.put(user.getId(), user);
         usersByName.put(userName, user);
         return user;
     }
 
-    public User getUser(UUID userId) {
-        if (userId != null) {
+    public Optional<User> getUser(UUID userId) {
+        if (users.get(userId) == null) {
+            LOGGER.error(String.format("User with id %s could not be found", userId));
+            return Optional.empty();
+        } else {
+            return Optional.of(users.get(userId));
+        }
+      /*  if (userId != null) {
             return users.get(userId);
         }
         return null;
+        */
     }
 
     public User getUserByName(String userName) {
@@ -136,22 +130,19 @@ public class UserManager {
         if (userId != null) {
             final User user = users.get(userId);
             if (user != null) {
-                CALL_EXECUTOR.execute(
-                        new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            LOGGER.info("USER REMOVE - " + user.getName() + " (" + reason.toString() + ")  userId: " + userId);
-                            user.remove(reason);
-                            LOGGER.debug("USER REMOVE END - " + user.getName());
-                        } catch (Exception ex) {
-                            handleException(ex);
-                        } finally {
-                            users.remove(userId);
-                            usersByName.remove(user.getName());
+                USER_EXECUTOR.execute(
+                        () -> {
+                            try {
+                                LOGGER.info("USER REMOVE - " + user.getName() + " (" + reason.toString() + ")  userId: " + userId + " [" + user.getGameInfo() + ']');
+                                user.remove(reason);
+                                LOGGER.debug("USER REMOVE END - " + user.getName());
+                            } catch (Exception ex) {
+                                handleException(ex);
+                            } finally {
+                                users.remove(userId);
+                                usersByName.remove(user.getName());
+                            }
                         }
-                    }
-                }
                 );
             } else {
                 LOGGER.warn("Trying to remove userId: " + userId + " - but it does not exist.");
@@ -177,10 +168,9 @@ public class UserManager {
     private void checkExpired() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MINUTE, -3);
-        List<User> usersToCheck = new ArrayList<>();
-        usersToCheck.addAll(users.values());
+        List<User> usersToCheck = new ArrayList<>(users.values());
         for (User user : usersToCheck) {
-            if (!user.getUserState().equals(UserState.Expired) && user.isExpired(calendar.getTime())) {
+            if (user.getUserState() != UserState.Expired && user.isExpired(calendar.getTime())) {
                 removeUser(user.getId(), DisconnectReason.SessionExpired);
             }
         }
@@ -212,14 +202,11 @@ public class UserManager {
     }
 
     public void updateUserHistory() {
-        CALL_EXECUTOR.execute(new Runnable() {
-            @Override
-            public void run() {
-                for (String updatedUser : UserStatsRepository.instance.updateUserStats()) {
-                    User user = getUserByName(updatedUser);
-                    if (user != null) {
-                        user.resetUserStats();
-                    }
+        USER_EXECUTOR.execute(() -> {
+            for (String updatedUser : UserStatsRepository.instance.updateUserStats()) {
+                User user = getUserByName(updatedUser);
+                if (user != null) {
+                    user.resetUserStats();
                 }
             }
         });

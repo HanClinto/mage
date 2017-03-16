@@ -3,7 +3,7 @@ package org.mage.plugins.card.constants;
 import java.awt.Rectangle;
 import java.io.File;
 
-public class Constants {
+public final class Constants {
 
     public static final String RESOURCE_PATH_SET = File.separator + "sets" + File.separator;
 
@@ -22,5 +22,5 @@ public class Constants {
         String IMAGE_PROPERTIES_FILE = "image.url.properties";
     }
 
-    public static final String CARD_IMAGE_PATH_TEMPLATE = "." + File.separator + "plugins" + File.separator + "images/{set}/{name}.{collector}.full.jpg";
+    public static final String CARD_IMAGE_PATH_TEMPLATE = '.' + File.separator + "plugins" + File.separator + "images/{set}/{name}.{collector}.full.jpg";
 }

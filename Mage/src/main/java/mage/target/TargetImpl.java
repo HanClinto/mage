@@ -34,9 +34,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+
 import mage.MageObject;
 import mage.abilities.Ability;
 import mage.cards.Card;
@@ -50,13 +50,12 @@ import mage.players.Player;
 import mage.util.RandomUtil;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public abstract class TargetImpl implements Target {
 
-    protected Map<UUID, Integer> targets = new LinkedHashMap<>();
-    protected Map<UUID, Integer> zoneChangeCounters = new HashMap<>();
+    protected final Map<UUID, Integer> targets = new LinkedHashMap<>();
+    protected final Map<UUID, Integer> zoneChangeCounters = new HashMap<>();
 
     protected String targetName;
     protected Zone zone;
@@ -133,9 +132,9 @@ public abstract class TargetImpl implements Target {
             StringBuilder sb = new StringBuilder();
             sb.append("Select ").append(targetName);
             if (getMaxNumberOfTargets() > 0 && getMaxNumberOfTargets() != Integer.MAX_VALUE) {
-                sb.append(" (").append(targets.size()).append("/").append(getMaxNumberOfTargets()).append(")");
+                sb.append(" (").append(targets.size()).append('/').append(getMaxNumberOfTargets()).append(')');
             } else {
-                sb.append(" (").append(targets.size()).append(")");
+                sb.append(" (").append(targets.size()).append(')');
             }
             sb.append(suffix);
             return sb.toString();
@@ -185,7 +184,7 @@ public abstract class TargetImpl implements Target {
 
     @Override
     public boolean isRequired(Ability ability) {
-        return ability == null || ability.isActivated() || !(ability.getAbilityType().equals(AbilityType.SPELL) || ability.getAbilityType().equals(AbilityType.ACTIVATED));
+        return ability == null || ability.isActivated() || !(ability.getAbilityType() == AbilityType.SPELL || ability.getAbilityType() == AbilityType.ACTIVATED);
     }
 
     @Override
@@ -199,18 +198,12 @@ public abstract class TargetImpl implements Target {
         if (getMaxNumberOfTargets() == 0 && getNumberOfTargets() == 0) {
             return true;
         }
-        if (getMaxNumberOfTargets() != 0 && targets.size() == getMaxNumberOfTargets()) {
-            return true;
-        }
-        return chosen;
+        return getMaxNumberOfTargets() != 0 && targets.size() == getMaxNumberOfTargets() || chosen;
     }
 
     @Override
     public boolean doneChosing() {
-        if (getMaxNumberOfTargets() == 0) {
-            return false;
-        }
-        return targets.size() == getMaxNumberOfTargets();
+        return getMaxNumberOfTargets() != 0 && targets.size() == getMaxNumberOfTargets();
     }
 
     @Override
@@ -321,7 +314,7 @@ public abstract class TargetImpl implements Target {
             chosen = targets.size() >= getNumberOfTargets();
             if (isRandom()) {
                 Set<UUID> possibleTargets = possibleTargets(source.getSourceId(), playerId, game);
-                if (possibleTargets.size() > 0) {
+                if (!possibleTargets.isEmpty()) {
                     int i = 0;
                     int rnd = RandomUtil.nextInt(possibleTargets.size());
                     Iterator it = possibleTargets.iterator();
@@ -377,7 +370,7 @@ public abstract class TargetImpl implements Target {
             }
         }
 
-        return targets.size() > 0;
+        return !targets.isEmpty();
     }
 
     /**
@@ -490,7 +483,7 @@ public abstract class TargetImpl implements Target {
 
     @Override
     public UUID getFirstTarget() {
-        if (targets.size() > 0) {
+        if (!targets.isEmpty()) {
             return targets.keySet().iterator().next();
         }
         return null;
@@ -551,7 +544,7 @@ public abstract class TargetImpl implements Target {
     }
 
     /**
-     * Is used to be able to check, that another target is slected within the
+     * Is used to be able to check, that another target is selected within the
      * group of targets of the ability with a target tag > 0.
      *
      * @param targetTag
@@ -559,6 +552,17 @@ public abstract class TargetImpl implements Target {
     @Override
     public void setTargetTag(int targetTag) {
         this.targetTag = targetTag;
+    }
+
+    @Override
+    public Target getOriginalTarget() {
+        return this;
+    }
+
+    @Override
+    public void setTargetAmount(UUID targetId, int amount, Game game) {
+        targets.put(targetId, amount);
+        rememberZoneChangeCounter(targetId, game);
     }
 
 }

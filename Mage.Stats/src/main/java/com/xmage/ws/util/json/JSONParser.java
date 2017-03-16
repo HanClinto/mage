@@ -34,7 +34,7 @@ public class JSONParser {
 
     private CachePolicy cachePolicy = CachePolicy.CACHE_ONE_LEVEL_ONLY;
 
-    private Map<String, Object> cache = new HashMap<String, Object>();
+    private Map<String, Object> cache = new HashMap<>();
 
     public void parseJSON(String jsonString) throws JSONValidationException {
         parseJSON(jsonString, true);
@@ -97,9 +97,9 @@ public class JSONParser {
                 json = (JSONObject) jsonArray.get(index);
                 jsonArray = null;
             } else if (param.contains("[")) {
-                int find = param.indexOf("[");
+                int find = param.indexOf('[');
                 String newParam = param.substring(0, find);
-                String s = param.substring(find+1, param.indexOf("]"));
+                String s = param.substring(find+1, param.indexOf(']'));
                 if (s.isEmpty()) {
                     jsonArray = (JSONArray) json.get(newParam);
                     json = null;

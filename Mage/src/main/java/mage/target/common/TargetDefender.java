@@ -49,8 +49,8 @@ import java.util.UUID;
  */
 public class TargetDefender extends TargetImpl {
 
-    protected FilterPlaneswalkerOrPlayer filter;
-    protected UUID attackerId;
+    protected final FilterPlaneswalkerOrPlayer filter;
+    protected final UUID attackerId;
 
     public TargetDefender(Set<UUID> defenders, UUID attackerId) {
         this(1, 1, defenders, attackerId);
@@ -135,12 +135,12 @@ public class TargetDefender extends TargetImpl {
         MageObject targetSource = game.getObject(sourceId);
         for (UUID playerId: game.getState().getPlayersInRange(sourceControllerId, game)) {
             Player player = game.getPlayer(playerId);
-            if (player != null && player.canBeTargetedBy(targetSource, sourceControllerId, game) && filter.match(player, game)) {
+            if (player != null && (player.canBeTargetedBy(targetSource, sourceControllerId, game) || notTarget)  && filter.match(player, game)) {
                 possibleTargets.add(playerId);
             }
         }
         for (Permanent permanent: game.getBattlefield().getActivePermanents(new FilterPlaneswalkerPermanent(), sourceControllerId, game)) {
-            if (permanent.canBeTargetedBy(targetSource, sourceControllerId, game) && filter.match(permanent, game)) {
+            if ((permanent.canBeTargetedBy(targetSource, sourceControllerId, game) || notTarget)  && filter.match(permanent, game)) {
                 possibleTargets.add(permanent.getId());
             }
         }
@@ -170,11 +170,11 @@ public class TargetDefender extends TargetImpl {
         for (UUID targetId: getTargets()) {
             Permanent permanent = game.getPermanent(targetId);
             if (permanent != null) {
-                sb.append(permanent.getName()).append(" ");
+                sb.append(permanent.getName()).append(' ');
             }
             else {
                 Player player = game.getPlayer(targetId);
-                sb.append(player.getLogName()).append(" ");
+                sb.append(player.getLogName()).append(' ');
             }
         }
         return sb.toString();
@@ -187,10 +187,7 @@ public class TargetDefender extends TargetImpl {
             return filter.match(player, game);
         }
         Permanent permanent = game.getPermanent(id);
-        if (permanent != null) {
-            return filter.match(permanent, game);
-        }
-        return false;
+        return permanent != null && filter.match(permanent, game);
     }
 
     @Override

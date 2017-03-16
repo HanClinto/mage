@@ -27,7 +27,6 @@
  */
 package org.mage.test.cards.abilities.keywords;
 
-import mage.abilities.keyword.IndestructibleAbility;
 import mage.constants.CardType;
 import mage.constants.PhaseStep;
 import mage.constants.Zone;
@@ -210,8 +209,8 @@ public class TransformTest extends CardTestPlayerBase {
         assertGraveyardCount(playerA, "Startled Awake", 0);
         assertPermanentCount(playerA, "Persistent Nightmare", 1); // Night-side card of Startled Awake
         Permanent nightmare = getPermanent("Persistent Nightmare", playerA);
-        Assert.assertTrue("Has to have creature card type", nightmare.getCardType().contains(CardType.CREATURE));
-        Assert.assertFalse("Has not to have sorcery card type", nightmare.getCardType().contains(CardType.SORCERY));
+        Assert.assertTrue("Has to have creature card type", nightmare.isCreature());
+        Assert.assertFalse("Has not to have sorcery card type", nightmare.isSorcery());
     }
 
     /**

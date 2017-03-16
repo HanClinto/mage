@@ -29,8 +29,13 @@ package mage.abilities.effects;
 
 import mage.abilities.Ability;
 import mage.abilities.costs.Cost;
+import mage.abilities.costs.Costs;
+import mage.abilities.costs.CostsImpl;
+import mage.abilities.costs.common.PayLifeCost;
+import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
 import mage.abilities.costs.mana.ManaCostsImpl;
+import mage.abilities.costs.mana.PhyrexianManaCost;
 import mage.constants.Duration;
 import mage.constants.Outcome;
 import mage.game.Game;
@@ -38,13 +43,16 @@ import mage.game.events.GameEvent;
 import mage.game.events.GameEvent.EventType;
 import mage.players.Player;
 
+import java.util.Iterator;
+import java.util.List;
+
 /**
  *
  * @author LevelX2
  */
 public abstract class PayCostToAttackBlockEffectImpl extends ReplacementEffectImpl implements PayCostToAttackBlockEffect {
 
-    public static enum RestrictType {
+    public enum RestrictType {
 
         ATTACK("attack"),
         ATTACK_AND_BLOCK("attack or block"),
@@ -111,7 +119,7 @@ public abstract class PayCostToAttackBlockEffectImpl extends ReplacementEffectIm
             case BLOCK:
                 return event.getType().equals(GameEvent.EventType.DECLARE_BLOCKER);
             case ATTACK_AND_BLOCK:
-                return event.getType() == GameEvent.EventType.DECLARE_ATTACKER || event.getType().equals(GameEvent.EventType.DECLARE_BLOCKER);
+                return event.getType() == GameEvent.EventType.DECLARE_ATTACKER || event.getType() == EventType.DECLARE_BLOCKER;
         }
         return false;
     }
@@ -141,6 +149,7 @@ public abstract class PayCostToAttackBlockEffectImpl extends ReplacementEffectIm
             attackBlockManaTax.clearPaid();
             if (attackBlockManaTax.canPay(source, source.getSourceId(), player.getId(), game)
                     && player.chooseUse(Outcome.Neutral, chooseText, source, game)) {
+                handlePhyrexianManaCosts(manaCosts, player, source, game);
                 if (attackBlockManaTax instanceof ManaCostsImpl) {
                     if (attackBlockManaTax.payOrRollback(source, game, source.getSourceId(), event.getPlayerId())) {
                         return false;
@@ -151,6 +160,27 @@ public abstract class PayCostToAttackBlockEffectImpl extends ReplacementEffectIm
         }
         return false;
     }
+
+    private void handlePhyrexianManaCosts(ManaCosts<ManaCost> manaCosts, Player player, Ability source, Game game) {
+        Iterator<ManaCost> manaCostIterator = manaCosts.iterator();
+        Costs<PayLifeCost> costs = new CostsImpl<>();
+
+        while(manaCostIterator.hasNext()) {
+            ManaCost manaCost = manaCostIterator.next();
+            if(manaCost instanceof PhyrexianManaCost) {
+                PhyrexianManaCost phyrexianManaCost = (PhyrexianManaCost)manaCost;
+                PayLifeCost payLifeCost = new PayLifeCost(2);
+                if(payLifeCost.canPay(source, source.getSourceId(), player.getId(), game) &&
+                        player.chooseUse(Outcome.LoseLife,  "Pay 2 life instead of " + phyrexianManaCost.getBaseText() + "?", source, game)) {
+                    manaCostIterator.remove();
+                    costs.add(payLifeCost);
+                }
+            }
+        }
+
+        costs.pay(source, game, source.getSourceId(), player.getId(), false, null);
+    }
+
 
     private boolean handleOtherCosts(Cost attackBlockOtherTax, GameEvent event, Ability source, Game game) {
         Player player = game.getPlayer(event.getPlayerId());

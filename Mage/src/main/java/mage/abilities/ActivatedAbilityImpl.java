@@ -34,6 +34,7 @@ import mage.abilities.costs.mana.ManaCosts;
 import mage.abilities.costs.mana.PhyrexianManaCost;
 import mage.abilities.effects.Effect;
 import mage.abilities.effects.Effects;
+import mage.abilities.mana.ManaOptions;
 import mage.cards.Card;
 import mage.constants.AbilityType;
 import mage.constants.AsThoughEffectType;
@@ -173,6 +174,12 @@ public abstract class ActivatedAbilityImpl extends AbilityImpl implements Activa
                     return false;
                 }
                 break;
+            case OWNER:
+                Permanent permanent = game.getPermanent(getSourceId());
+                if (!permanent.getOwnerId().equals(playerId)) {
+                    return false;
+                }
+                break;
             case YOU:
                 if (!controlsAbility(playerId, game)) {
                     return false;
@@ -197,6 +204,11 @@ public abstract class ActivatedAbilityImpl extends AbilityImpl implements Activa
             }
         }
         return false;
+    }
+
+    @Override
+    public ManaOptions getMinimumCostToActivate(UUID playerId, Game game) {
+        return getManaCostsToPay().getOptions();
     }
 
     protected boolean controlsAbility(UUID playerId, Game game) {
